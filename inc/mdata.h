@@ -29,7 +29,7 @@
 /*
  * prototypes
  */
-uint16_t Get_OL_Timing(uint16_t);
+uint16_t Get_OL_Timing(uint16_t table_index);
 
 
 #endif // MDATA_H

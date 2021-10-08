@@ -21,7 +21,7 @@ uint8_t SerialKeyPressed(char *key);
 
 void MCU_Init(void);
 
-void MCU_set_comm_timer(uint16_t);
+void MCU_set_comm_timer(uint16_t period);
 
 
 #endif // MCU_STM8S

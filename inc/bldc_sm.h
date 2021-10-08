@@ -60,15 +60,15 @@ BL_State_T;
   * @return commutation period
   */
 uint16_t BL_get_timing(void);
-void BL_set_timing( uint16_t );
+void BL_set_timing( uint16_t  u16);
 
-void BL_set_opstate(uint8_t);
+void BL_set_opstate(uint8_t opstate);
 uint8_t BL_get_opstate(void);
 
 //void BL_timing_step_slower(void);
 //void BL_timing_step_faster(void);
 
-void BL_set_speed(uint16_t dc);
+void BL_set_speed(uint16_t ui_mspeed_counts);
 uint16_t BL_get_speed(void);
 
 void BL_reset(void);

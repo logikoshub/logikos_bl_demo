@@ -50,7 +50,7 @@ void Driver_on_ADC_conv(void);
 void Driver_on_capture_rise(void);
 void Driver_on_capture_fall(void);
 
-void Driver_set_pulse_dur(uint16_t);
+void Driver_set_pulse_dur(uint16_t duration);
 uint16_t Driver_get_pulse_dur(void);
 
 uint16_t Driver_get_motor_spd_pcnt(void);
@@ -60,6 +60,6 @@ uint16_t Driver_get_servo_position_counts(void);
 
 void Driver_Get_Rx_It(void);
 uint8_t Driver_Return_Rx_Buffer(void);
-void Driver_Clear_Rx_Buffer_Element(uint8_t);
+void Driver_Clear_Rx_Buffer_Element(uint8_t Location);
 
 #endif // DRIVER_H
