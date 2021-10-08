@@ -379,7 +379,7 @@ static void ADC1_setup(void)
 static void Servo_CC_setup(void)
 {
   const TIM2_Prescaler_TypeDef prescaler = TIM2_PRESCALER_8;
-  const uint16_t period = 0xFFFF;
+  const uint16_t period = 0xFFFFu;
   const uint8_t ICFilter = 1;
 
   TIM2_DeInit();
@@ -421,10 +421,10 @@ static void Servo_CC_setup(void)
 /*
  * counter clock frequency fCK_CNT is equal to fCK_PSC / (PSCR[15:0]+1)
  */
-  const uint16_t prescaler = 8;
-  const uint16_t period = 0xFFFF;
-  const uint8_t repetitionCounter = 1;
-  const uint8_t ICFilter = 1;
+  static const uint16_t prescaler = 8;
+  static const uint16_t period = 0xFFFFu;
+  static const uint8_t repetitionCounter = 1;
+  static const uint8_t ICFilter = 1;
   TIM1_DeInit();
 
   TIM1_TimeBaseInit( prescaler - 1 , TIM1_COUNTERMODE_UP, period, repetitionCounter );
