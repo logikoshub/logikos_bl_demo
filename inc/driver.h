@@ -54,7 +54,6 @@ void Driver_set_pulse_dur(uint16_t duration);
 uint16_t Driver_get_pulse_dur(void);
 
 uint16_t Driver_get_motor_spd_pcnt(void);
-uint16_t Driver_get_pulse_dur(void);
 uint16_t Driver_get_pulse_perd(void);
 uint16_t Driver_get_servo_position_counts(void);
 
