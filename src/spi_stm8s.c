@@ -74,7 +74,7 @@ int SPI_read_write_b(uint8_t * chbuf, uint8_t data, uint16_t time_out)
             }
             spi_tx = chbuf[ index ]; // send something back
 
-            while (! (SPI->SR & SPI_SR_TXE) );
+            while (! (SPI->SR & SPI_SR_TXE) ) {}
 
             SPI->DR = spi_tx;
 
@@ -136,7 +136,7 @@ void chip_deselect(void)
 void SPI_write(uint8_t data)
 {
     SPI->DR = data;
-    while (! (SPI->SR & SPI_SR_TXE) );
+    while (! (SPI->SR & SPI_SR_TXE) ) {}
 }
 
 /**
@@ -147,7 +147,7 @@ void SPI_write(uint8_t data)
 uint8_t SPI_read( void )
 {
     SPI_write( 0xA5 );
-    while ( ! (SPI->SR & SPI_SR_RXNE) );
+    while ( ! (SPI->SR & SPI_SR_RXNE) ) {}
     return SPI->DR;
 }
 
@@ -158,11 +158,11 @@ uint8_t SPI_read( void )
  */
 uint8_t SPI_read_write(uint8_t data)
 {
-    while (! (SPI->SR & SPI_SR_TXE) );
+    while (! (SPI->SR & SPI_SR_TXE) ) {}
 
     SPI->DR = data;
 
-    while ( ! (SPI->SR & SPI_SR_RXNE) );
+    while ( ! (SPI->SR & SPI_SR_RXNE) ) {}
 
     return SPI->DR;
 }
