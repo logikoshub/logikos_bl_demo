@@ -25,9 +25,9 @@
  * 100% / 250 counts == 0.4% per count
  * 250 * .004 == 1
  */
-#define PWM_PERCENT_PER_COUNT_250  0.004 //  ( 100.0 / MDATA_TBL_SIZE ) // .4% i.e. .004
+#define PWM_PERCENT_PER_COUNT_250  0.004 //  ( 100.0 / MDATA_TBL_SIZE ) // .4% 
 
-// table size originated from 250 step PWM confiugration
+// step size originated from 250 element PWM->commutation look up table
 #define MSPEED_PCNT_INCREM_STEP   ( PWM_PERIOD_COUNTS * PWM_PERCENT_PER_COUNT_250 )
 
 #define RX_BUFFER_SIZE  16  //how big should this be?
