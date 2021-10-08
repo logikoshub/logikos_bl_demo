@@ -112,7 +112,7 @@ static faultm_mat_t fault_matrix[ NR_DEFINED_FAULTS ];
  */
 void Faultm_init(void)
 {
-    int nnn;
+    uint16_t nnn;
 
     // intialize fault matrix
     memset(fault_matrix, 0, sizeof(fault_matrix) /* size in bytes */ );
