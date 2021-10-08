@@ -177,5 +177,5 @@ Git Bash or Cygwin) to deploy the docs in gh-pages:
     git commit -a -m "Initial Commit"
     git push -u origin gh-pages
 
-If there is any conflicts with the gh-pages branch, it is easy to delete a branch (e.g.
+If there are any conflicts with the gh-pages branch, it is easy to delete a branch (e.g.
 on github web) and the commands above will then work to regenerate the branch.
