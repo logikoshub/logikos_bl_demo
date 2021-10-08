@@ -73,6 +73,7 @@ static uint16_t BL_optimer; // allows for timed op state (e.g. alignment)
 static BL_State_T BL_opstate; // BL operation state
 
 /* Private function prototypes -----------------------------------------------*/
+static bool BL_cl_control(uint16_t current_setpoint);
 
 /* Private functions ---------------------------------------------------------*/
 /**
@@ -271,7 +272,7 @@ uint8_t BL_get_opstate(void)
  * @param current_setpoint commutation period
  * @return TRUE: within control limits, FALSE: not within control limits
  */
-bool BL_cl_control(uint16_t current_setpoint)
+static bool BL_cl_control(uint16_t current_setpoint)
 {
   // returns true if plausible conditions for transition to closed-loop
   if ( TRUE == Seq_get_timing_error_p() )
