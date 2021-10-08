@@ -15,6 +15,9 @@ sampled by the ADC (analog digital converter) input to the STM8.
 A short video of the prototype can be seen 
 [here](https://drive.google.com/file/d/1LrSplfI0xa_OsSb_tm6vj7Udb8AkIftp/view?usp=sharing). 
 
+There is also a [GitHub.io](https://logikoshub.github.io/logikos_bl_demo/components.html) 
+site in where the software documentation tree can be browsed.
+
 # Obtaining and installing development environment
 
 Presently the de-facto toolchain is ST Visual Develop with COSMIC C compiler -
