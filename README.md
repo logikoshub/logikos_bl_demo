@@ -1,12 +1,19 @@
+<img align="right" width="280" height="240" src="docs/images/Log_logo.png">
+
 # Introduction
 
-This is a minimalistic implementation of a brushless DC motor driver on STM8
-microcontrollers. It is presently limited to the small (1100kv) brushless
-outrunners such as seen on cheap drones and RC planes.
+Welcome to our minimalistic implementation of a brushless DC motor driver on 
+STM8 microcontrollers. It is presently limited to the small (1100kv) brushless
+outrunners as used with many inexpensive radio-control airplanes and drones.
 
 The software drives the motor by applying the 6-step (trapezoidal) drive sequence.
 Motor synchronization is to be accomplished by using the motor back-EMF waveform 
 sampled by the ADC (analog digital converter) input to the STM8. 
+
+![Prototype](docs/images/BL+logo.png)
+
+A short video of the prototype can be seen [here]
+(https://drive.google.com/file/d/1LrSplfI0xa_OsSb_tm6vj7Udb8AkIftp/view?usp=sharing). 
 
 # Obtaining and installing development environment
 
