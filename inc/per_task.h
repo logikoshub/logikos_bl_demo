@@ -24,4 +24,6 @@ uint8_t Task_Ready(void);
 
 void UI_Stop(void);
 
+void Print_banner(void);
+
 #endif // PER_TASK_H

@@ -190,11 +190,7 @@ static int16_t comm_tm_err_ratio;
  */
 static void sector_0(void)
 {
-#ifdef BUFFER_ADC_BEMF
-  Back_EMF_Riseing_PhX = ( Back_EMF_Riseing_PhX + Driver_Get_Back_EMF_Avg() ) >> 1 ;
-#else
-  Back_EMF_Riseing_PhX = ( Back_EMF_Riseing_PhX + Driver_Get_ADC() ) >> 1 ;
-#endif
+  Back_EMF_Riseing_PhX = ( Back_EMF_Riseing_PhX + Driver_Get_ADC() ) >> 1;
 
 // C FLOAT NEG
   PWM_PhC_Disable(); // phase C PWM asserted off (negative-going float)
@@ -262,11 +258,7 @@ static void sector_2(void)
  */
 static void sector_3(void)
 {
-#ifdef BUFFER_ADC_BEMF
-  Back_EMF_Falling_PhX = ( Back_EMF_Falling_PhX + Driver_Get_Back_EMF_Avg() ) >> 1;
-#else
   Back_EMF_Falling_PhX = ( Back_EMF_Falling_PhX + Driver_Get_ADC() ) >> 1;
-#endif
 
 // C FLOAT POS
   PWM_PhC_Disable(); //phase C PWM asserted off (positive-going float)

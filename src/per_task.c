@@ -134,30 +134,18 @@ static const ui_key_handler_t ui_keyhandlers_tb[] =
 static void Log_println(int zrof)
 {
   static uint16_t Line_Count = 0;
-  int faults = (int)Faultm_get_status();
-  uint16_t ui_speed = UI_Speed;
-  uint16_t bl_speed = BL_get_speed();
-  uint16_t bl_timing = BL_get_timing();
-//  uint16_t servo_pulse_period = Driver_get_pulse_perd();
-  uint16_t servo_pulse_duration = Driver_get_pulse_dur();
-  uint16_t motor_spd_pcnt = (uint16_t)Driver_get_motor_spd_pcnt();
-  uint16_t servo_posn_counts = Driver_get_servo_position_counts();
-  uint16_t timing_error = Seq_get_timing_error();
-  uint16_t PWM_dc = PWM_get_dutycycle();
-
   // if flag is set then reset line counter
   if ( 0 != zrof)
   {
     Line_Count = 0;
   }
-
   // if logger is enabled (level>0) then invoke its output
   if ( Log_Level > 0)
   {
     printf(
       "{%04X) UIspd%=%X CtmCt=%04X BLdc=%04X Vs=%04X Sflt=%X RCsigCt=%04X MspdCt=%u Mspd%=%u PWMdc=%04X ERR=%04X ST=%u BR=%04X BF=%04X \r\n",
       Line_Count++,  // increment line count
-      ui_speed, BL_get_timing(), BL_get_speed(),
+      UI_Speed, BL_get_timing(), BL_get_speed(),
       Vsystem,
       (int)Faultm_get_status(),
       Driver_get_pulse_dur(),
