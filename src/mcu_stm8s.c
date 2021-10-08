@@ -74,7 +74,7 @@ PUTCHAR_PROTOTYPE
   /* Write a character to the UART1 */
   UART2_SendData8(c);
   /* Loop until the end of transmission */
-  while (UART2_GetFlagStatus(UART2_FLAG_TXE) == RESET);
+  while (UART2_GetFlagStatus(UART2_FLAG_TXE) == RESET) {}
 
   return (c);
 }
@@ -89,7 +89,7 @@ PUTCHAR_PROTOTYPE
 void UartSend(uint8_t value)
 {
     UART2_SendData8(value);
-    while ( 0 == (UART2->SR & UART2_SR_TXE) );
+    while ( 0 == (UART2->SR & UART2_SR_TXE) ) {}
 }
 
 /**
@@ -106,8 +106,8 @@ GETCHAR_PROTOTYPE
   int c = 0;
 #endif
   /* Loop until the Read data register flag is SET */
-  while (UART2_GetFlagStatus(UART2_FLAG_RXNE) == RESET);
-    c = UART2_ReceiveData8();
+  while (UART2_GetFlagStatus(UART2_FLAG_RXNE) == RESET) {}
+  c = UART2_ReceiveData8();
   return (c);
 }
 
