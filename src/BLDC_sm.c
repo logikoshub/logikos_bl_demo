@@ -193,18 +193,18 @@ uint16_t BL_get_speed(void)
 /**
  * @brief adjust commutation timing by step amount
  */
-void _BL_timing_step_slower(uint16_t current_setpoint)
+/*void _BL_timing_step_slower(uint16_t current_setpoint)
 {
   BL_set_timing(current_setpoint + (uint16_t)BL_ONE_RAMP_UNIT);
-}
+}/*
 
 /**
  * @brief adjust commutation timing by step amount
  */
-void _BL_timing_step_faster(uint16_t current_setpoint)
+/*void _BL_timing_step_faster(uint16_t current_setpoint)
 {
   BL_set_timing(current_setpoint - (uint16_t)BL_ONE_RAMP_UNIT);
-}
+}*/
 
 /**
   * @brief Accessor for commutation period.
