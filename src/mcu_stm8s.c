@@ -296,11 +296,7 @@ static void UART_setup(void)
  * min sample time .75 useconds @ fADC = 4Mhz
  * conversion time = 14 * 1/2000000 = 0.0000035 seconds (3.5 us)
  */
-#ifdef CLOCK_16
 #define ADC_DIVIDER ADC1_PRESSEL_FCPU_D4  // 8 -> 16/4 = 4
-#else
-#define ADC_DIVIDER ADC1_PRESSEL_FCPU_D2  // 4 ->  8/2 = 4
-#endif
 /*
  * https://community.st.com/s/question/0D50X00009XkbA1SAJ/multichannel-adc
  */
@@ -382,11 +378,7 @@ static void ADC1_setup(void)
 */
 static void Servo_CC_setup(void)
 {
- #ifdef CLOCK_16
   const TIM2_Prescaler_TypeDef prescaler = TIM2_PRESCALER_8;
-#else
-  const TIM2_Prescaler_TypeDef prescaler = TIM2_PRESCALER_4;
-#endif
   const uint16_t period = 0xFFFF;
   const uint8_t ICFilter = 1;
 
@@ -429,11 +421,7 @@ static void Servo_CC_setup(void)
 /*
  * counter clock frequency fCK_CNT is equal to fCK_PSC / (PSCR[15:0]+1)
  */
- #ifdef CLOCK_16
   const uint16_t prescaler = 8;
-#else
-  const uint16_t prescaler = 4;
-#endif
   const uint16_t period = 0xFFFF;
   const uint8_t repetitionCounter = 1;
   const uint8_t ICFilter = 1;
@@ -475,15 +463,10 @@ static void Servo_CC_setup(void)
  * Timers 2 3 & 5 are 16-bit general purpose timers
  *  Sets the commutation switching period.
  *
- *  @8Mhz, fMASTER period ==  0.000000125 S
- *   Timer Step:
- *     step = 1 / 8Mhz * prescaler = 0.000000125 * (2^1) = 0.000000250 S
+ *  fMASTER = 1/16 Mhz = 0000000625 seconds
+ *  Timer Step = fMASTER * prescaler = 0.0000000625 * (2^1) = 0.000000125 seconds
  */
-#ifdef CLOCK_16
 #define TIM3_PSCR  0x01  // 2^1 == 2
-#else
-#define TIM3_PSCR  0x00  // 2^0 == 1
-#endif
 
 /**
  * @brief  Set timer that establishes commutation timing period.
@@ -507,11 +490,7 @@ void MCU_set_comm_timer(uint16_t period)
  * @brief Sets period of the commutation timer.
  * @param  period  Value written to auto-reload register
  */
-#ifdef CLOCK_16
 #define TIM1_PSCR  0x02
-#else
-#define TIM1_PSCR  0x01
-#endif
 
 void MCU_set_comm_timer(uint16_t period)
 {
@@ -549,11 +528,7 @@ static void Clock_setup(void)
   CLK_HSECmd(ENABLE);
 #endif
 
-#ifdef CLOCK_16
   CLK_SYSCLKConfig(CLK_PRESCALER_HSIDIV1); // 16Mhz
-#else
-  CLK_SYSCLKConfig(CLK_PRESCALER_HSIDIV2); // 8Mhz
-#endif // CLK
 
 // enable timer peripheral clocks ... otherwise the clocks enables left to the
 // individual peripheral initialiations.
@@ -591,11 +566,7 @@ void SPI_setup(void)
   GPIO_Init(GPIOC, GPIO_PIN_7, GPIO_MODE_IN_PU_NO_IT);
 
   SPI_Init(SPI_FIRSTBIT_MSB,
-#ifdef CLOCK_16
            SPI_BAUDRATEPRESCALER_256, // tmp test //      SPI_BAUDRATEPRESCALER_16, // how fast
-#else
-           SPI_BAUDRATEPRESCALER_128, // tmp test //      SPI_BAUDRATEPRESCALER_16, // how fast
-#endif
            SPI_MODE_MASTER,
            SPI_CLOCKPOLARITY_LOW, SPI_CLOCKPHASE_1EDGE,
            SPI_DATADIRECTION_2LINES_FULLDUPLEX, SPI_NSS_SOFT, (uint8_t)0x07);

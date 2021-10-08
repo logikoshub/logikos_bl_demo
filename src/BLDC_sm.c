@@ -38,9 +38,11 @@
 #define PWM_PD_CLOOP     PWM_GET_PULSE_COUNTS( PWM_PCNT_CLOOP )
 #define PWM_PD_SHUTOFF   PWM_GET_PULSE_COUNTS( PWM_PCNT_SHUTOFF )
 
-// commutation period at start of ramp (est. @ 12v) - exp. det.
+// commutation period at start of ramp (est. @ 12.5v) - (experimental/TBD)
 #define BL_CT_RAMP_START  (5632.0 * CTIME_SCALAR) // $1600
+// commutation period at end of ramp (est. @ 12.5v) - (experimental/TBD)
 #define BL_CT_RAMP_END    (1760.0 * CTIME_SCALAR) // $06E0
+// for some reason this little slowdown at ramp end aids in getting sync (experimental/TBD)
 #define BL_CT_STARTUP     (1866.0 * CTIME_SCALAR) // $074A
 
 /**
@@ -314,7 +316,6 @@ void BL_State_Ctrl(void)
 // todo: tbd
       BL_set_timing( 0x0010 ); // set to some small value (sampling vBatt measurement)
 
-
       if (atimer < ARMING_TIME_100)
       {
         atimer += 1;
@@ -334,8 +335,7 @@ void BL_State_Ctrl(void)
       }
       else
       {
-        BL_reset();// reset again to be sure motor-drive/PWM reinitialied
-//        BL_set_opstate( BL_STOPPED ); // assert stopped state (_reset() puts state to arming)
+        BL_reset(); // reset again to be sure motor-drive/PWM reinitialized
       }
     }
     else  if( BL_STOPPED == BL_get_opstate() )
