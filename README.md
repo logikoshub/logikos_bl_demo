@@ -132,7 +132,7 @@ is set to serve from a `gh-pages` branch of the project repo -
 
 ## Prerequisites:
 
-* [Doxygen]{https://www.doxygen.nl/download.html} - available for Windows as 
+* [Doxygen](https://www.doxygen.nl/download.html) - available for Windows as 
 self-installing archive and included GUI, or as 32-bit or 64-bit standalone binary zip if preferred.
 * [PlantUML](https://plantuml.com/download) is distributed as a single jar 
 * (java archive) and requires a functional java (installation of which not 
