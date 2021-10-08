@@ -43,6 +43,10 @@
 #define BL_CT_RAMP_END    (1760.0 * CTIME_SCALAR) // $06E0
 #define BL_CT_STARTUP     (1866.0 * CTIME_SCALAR) // $074A
 
+// error limit used in BL_cl_control
+// needs to be small enough to be stable upon transition from to closed-loop
+#define ERROR_LIMIT	50
+
 /**
  * @brief Control rate scalar
  * @details Scale factor relating the commutation-timing ramp data and variables
@@ -270,15 +274,14 @@ bool BL_cl_control(uint16_t current_setpoint)
   // returns true if plausible conditions for transition to closed-loop
   if ( TRUE == Seq_get_timing_error_p() )
   {
-    const uint8_t ERROR_LIMIT = 50;
     // needs to be small enough to be stable upon transition from to closed-loop
-    const int16_t ERROR_MAX = ERROR_LIMIT;
-    const int16_t ERROR_MIN = -(ERROR_LIMIT);
+    static const int16_t ERROR_MAX = ERROR_LIMIT;
+    static const int16_t ERROR_MIN = -1 * ERROR_LIMIT;
     int16_t timing_error = Seq_get_timing_error();
 
     if ((timing_error > ERROR_MIN) && (timing_error < ERROR_MAX))
     {
-      const uint8_t PROP_GAIN = 10; // inverse of kP
+      static const int16_t PROP_GAIN = 10; // inverse of kP
       int16_t correction = timing_error / PROP_GAIN ;
 
       BL_set_timing(current_setpoint + correction);
