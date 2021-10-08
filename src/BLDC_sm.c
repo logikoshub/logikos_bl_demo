@@ -312,10 +312,10 @@ void BL_State_Ctrl(void)
 
     if( BL_ARMING == bl_opstate )
     {
-      const uint16_t ARMING_TIME_100 = 0x08FF;
+      static const uint16_t ARMING_TIME_100 = 0x08FFu;
       static uint16_t atimer = 0;
 // todo: tbd
-      BL_set_timing( 0x0010 ); // set to some small value (sampling vBatt measurement)
+      BL_set_timing( 0x0010u ); // set to some small value (sampling vBatt measurement)
 
 
       if (atimer < ARMING_TIME_100)
@@ -323,16 +323,16 @@ void BL_State_Ctrl(void)
         atimer += 1;
         inp_dutycycle = 0;
         // brief delay after poweron
-        if (atimer > 0x0200)
+        if (atimer > 0x0200u)
         {
           // hold the current/PWM at fixed level
           inp_dutycycle = PWM_PD_ARMING;
         }
         // turn off at regular interval to make distint beeping (more like clicking!) sound
 //        if (atimer & 0x00C0)
-        if (atimer & 0x01C0)
+        if (atimer & 0x01C0u)
         {
-          inp_dutycycle = 0;
+          inp_dutycycle = 0u;
         }
       }
       else
@@ -397,9 +397,9 @@ void BL_State_Ctrl(void)
     }
     else if( BL_CLS_LOOP == bl_opstate )
     {
-#define CL_FAULT_CNTR 2000
-      const uint8_t FAULT_INCR = 20;
-      const uint8_t FAULT_DECR = 1;
+#define CL_FAULT_CNTR 2000u
+      static const uint16_t FAULT_INCR = 20;
+      static const uint16_t FAULT_DECR = 1;
       static uint16_t fault_counter = CL_FAULT_CNTR;
 
       // controller returns false upon failed control step

@@ -515,7 +515,7 @@ void MCU_set_comm_timer(uint16_t period)
 
 void MCU_set_comm_timer(uint16_t period)
 {
-  const uint16_t TIM1_Prescaler = TIM1_PSCR - 1;
+  static const uint16_t TIM1_Prescaler = TIM1_PSCR - 1;
 
   /* Set the Prescaler value */
   TIM1->PSCRH = (uint8_t)(TIM1_Prescaler >> 8);
