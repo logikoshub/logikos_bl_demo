@@ -12,8 +12,8 @@ sampled by the ADC (analog digital converter) input to the STM8.
 
 ![Prototype](docs/images/BL+logo.png)
 
-A short video of the prototype can be seen [here]
-(https://drive.google.com/file/d/1LrSplfI0xa_OsSb_tm6vj7Udb8AkIftp/view?usp=sharing). 
+A short video of the prototype can be seen 
+[here](https://drive.google.com/file/d/1LrSplfI0xa_OsSb_tm6vj7Udb8AkIftp/view?usp=sharing). 
 
 # Obtaining and installing development environment
 
@@ -40,7 +40,7 @@ Download IDE and compiler toolchain:
 
 ## Installing STSW-STM8069 STM8S/A Standard peripheral library
 
-* Navigate browser to [Standard peripheral library homepage - application note STSW-STM8069](https://www.st.com/en/embedded-software/stsw-stm8069.html) 
+* Navigate web browser to [Standard peripheral library homepage - application note STSW-STM8069](https://www.st.com/en/embedded-software/stsw-stm8069.html) 
 * Register with ST if required to do so. 
 * Get an email from ST with link to download en.stsw-stm8069.zip (SPL Version 2.3.1)
 * unzip `en.stsw-stm8069.zip` into your project directory.
@@ -81,8 +81,8 @@ toolchain in STVD:
   directive -dSTM8S105)
 
 # Running the controller with a motor
-The critical component of the hardware is the [3-phase driver]
-(https://simple-circuit.com/wp-content/uploads/2017/12/brushless-dc-motor-3-phase-bridge-circuit.png)circuit. 
+The critical component of the hardware is the 
+[3-phase driver](https://simple-circuit.com/wp-content/uploads/2017/12/brushless-dc-motor-3-phase-bridge-circuit.png)circuit. 
 The 3-phase driver circuit is implemented in large part by the 
 [IR2104 half-bridge IC](https://www.infineon.com/dgdl/Infineon-IR2104-DS-v01_00-EN.pdf?fileId=5546d462533600a4015355c7c1c31671). 
 Most variations of the this kind of circuit use an 
@@ -104,7 +104,8 @@ The following equipment is suggested:
 * Benchtop power supply (alternatively, 11.1v 3s pack)
 * FTDI cable (for remote user interface)
 * A 3-phase driver circuit e.g. the hardware schematic (in Kikad) for the stm8s105k
- configuration can be [found in this repositiory](https://github.com/gneidermeier/stm8_mcp/blob/master/docs/schem/bl_hw_stm8s105k_blue.tar.gz)
+ configuration can be 
+ [found in this repository](https://github.com/logikoshub/stm8_mcp/blob/master/docs/schem/bl_hw_stm8s105k_blue.tar.gz)
 
  Connect the FTDI cable (orange to STM8 Rx, yellow to STM8 Tx)
  Power the STM8 dev board (USB micro connector or 5 volt power source connected
@@ -131,7 +132,7 @@ is set to serve from a `gh-pages` branch of the project repo -
 
 ## Prerequisites:
 
-* [Doxygen] {https://www.doxygen.nl/download.html} - available for Windows as 
+* [Doxygen]{https://www.doxygen.nl/download.html} - available for Windows as 
 self-installing archive and included GUI, or as 32-bit or 64-bit standalone binary zip if preferred.
 * [PlantUML](https://plantuml.com/download) is distributed as a single jar 
 * (java archive) and requires a functional java (installation of which not 
@@ -157,11 +158,11 @@ The documentation is generated under the `<project_root>/build` directory. Open
 
 ## Update documentation on GitHub pages
 
-Create a new copy or clone of the project repo in which to update the `gh-pages` 
-[https://github.com/logikoshub/logikos_bl_demo/tree/gh-pages](branch). 
+Create a new copy or clone of the project repo in which to update the 
+[`gh-pages`](https://github.com/logikoshub/logikos_bl_demo/tree/gh-pages) branch. 
 
-In the repo copy, create an orphan branch 'gh-pages' - (a good explanation [on SO]
-https://stackoverflow.com/questions/48235671/deploy-project-to-gh-pages-from-a-git-clone) 
+In the repo copy, create an orphan branch 'gh-pages' - a discussion found 
+[on SO](https://stackoverflow.com/questions/48235671/deploy-project-to-gh-pages-from-a-git-clone) 
 helped quite a bit.
 
 In the repo copy checked-out to `gh-pages` branch, Replace all of the contents in the 
