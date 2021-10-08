@@ -437,8 +437,6 @@ void BL_State_Ctrl(void)
  */
 void BL_Commutation_Step(void)
 {
-  static uint16_t frame_timer = 0;
-
   switch( BL_get_opstate() )
   {
   case BL_ARMING:

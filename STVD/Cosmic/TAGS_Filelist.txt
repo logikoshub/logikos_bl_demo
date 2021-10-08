@@ -1,0 +1,62 @@
+..\..\src\bldc_sm.c
+..\..\src\driver.c
+..\..\src\faultm.c
+..\..\src\main.c
+..\..\src\mcu_stm8s.c
+..\..\src\per_task.c
+..\..\src\pwm_stm8s.c
+..\..\src\sequence.c
+..\..\src\spi_stm8s.c
+..\..\src\stm8s_it.c
+stm8_interrupt_vector.c
+..\..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_adc1.c
+..\..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_clk.c
+..\..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_gpio.c
+..\..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_spi.c
+..\..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_tim1.c
+..\..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_tim2.c
+..\..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_uart2.c
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_adc1.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_awu.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_beep.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_clk.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_exti.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_flash.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_gpio.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_i2c.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_itc.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_iwdg.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_rst.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_spi.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_tim1.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_tim2.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_tim3.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_tim4.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_uart2.h
+..\..\..\libraries\stm8s_stdperiph_driver\inc\stm8s_wwdg.h
+..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_adc1.c
+..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_clk.c
+..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_gpio.c
+..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_spi.c
+..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_tim1.c
+..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_tim2.c
+..\..\..\libraries\stm8s_stdperiph_driver\src\stm8s_uart2.c
+..\..\inc\bldc_sm.h
+..\..\inc\driver.h
+..\..\inc\faultm.h
+..\..\inc\mcu_stm8s.h
+..\..\inc\mdata.h
+..\..\inc\pdu_manager.h
+..\..\inc\per_task.h
+..\..\inc\pwm_stm8s.h
+..\..\inc\sequence.h
+..\..\inc\spi_stm8s.h
+..\..\inc\stm8s_conf.h
+..\..\inc\stm8s_it.h
+..\..\inc\system.h
+c:\program files (x86)\cosmic\fse_compilers\cxstm8\hstm8\ctype.h
+c:\program files (x86)\cosmic\fse_compilers\cxstm8\hstm8\modsl0.h
+c:\program files (x86)\cosmic\fse_compilers\cxstm8\hstm8\stddef.h
+c:\program files (x86)\cosmic\fse_compilers\cxstm8\hstm8\stdio.h
+c:\program files (x86)\cosmic\fse_compilers\cxstm8\hstm8\string.h
