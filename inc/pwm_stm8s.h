@@ -244,12 +244,12 @@ void PWM_PhA_Enable(void);
 void PWM_PhB_Enable(void);
 void PWM_PhC_Enable(void);
 
-void PWM_set_dutycycle(uint16_t);
+void PWM_set_dutycycle(uint16_t global_dutycycle);
 uint16_t PWM_get_dutycycle(void);
 
 void PWM_setup(void);
 
-uint16_t PWM_get_motor_spd_pcnt(uint16_t, uint16_t);
-uint16_t PWM_get_servo_position_counts( uint16_t );
+uint16_t PWM_get_motor_spd_pcnt(uint16_t pulse_period_counts, uint16_t pulse_duration_counts);
+uint16_t PWM_get_servo_position_counts( uint16_t pulse_duration_counts);
 
 #endif // PWM_STM_S_H

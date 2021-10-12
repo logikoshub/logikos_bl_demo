@@ -112,7 +112,7 @@ static faultm_mat_t fault_matrix[ NR_DEFINED_FAULTS ];
  */
 void Faultm_init(void)
 {
-    int nnn;
+    uint16_t nnn;
 
     // intialize fault matrix
     memset(fault_matrix, 0, sizeof(fault_matrix) /* size in bytes */ );
@@ -194,7 +194,7 @@ void Faultm_set(faultm_ID_t faultm_ID)
 void Faultm_upd(faultm_ID_t faultm_ID, faultm_assert_t tcondition)
 {
     // suspect that compiler clips the intermediate macro term out of range of 6-bit bitfield??
-    const uint8_t const_lmt_term = FAULT_BUCKET_INI; // FixMyMacro
+    static const uint8_t const_lmt_term = FAULT_BUCKET_INI; // FixMyMacro
 
 // assert (fault_ID < MAX)
 //    fault_status_reg_t  mask = (1 << faultm_ID); // maybe ... not necessary for now

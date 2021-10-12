@@ -45,6 +45,10 @@
 // for some reason this little slowdown at ramp end aids in getting sync (experimental/TBD)
 #define BL_CT_STARTUP     (1866.0 * CTIME_SCALAR) // $074A
 
+// error limit used in BL_cl_control
+// needs to be small enough to be stable upon transition from to closed-loop
+#define ERROR_LIMIT	50
+
 /**
  * @brief Control rate scalar
  * @details Scale factor relating the commutation-timing ramp data and variables
@@ -69,6 +73,7 @@ static uint16_t BL_optimer; // allows for timed op state (e.g. alignment)
 static BL_State_T BL_opstate; // BL operation state
 
 /* Private function prototypes -----------------------------------------------*/
+static bool BL_cl_control(uint16_t current_setpoint);
 
 /* Private functions ---------------------------------------------------------*/
 /**
@@ -189,18 +194,18 @@ uint16_t BL_get_speed(void)
 /**
  * @brief adjust commutation timing by step amount
  */
-void _BL_timing_step_slower(uint16_t current_setpoint)
+/*void _BL_timing_step_slower(uint16_t current_setpoint)
 {
   BL_set_timing(current_setpoint + (uint16_t)BL_ONE_RAMP_UNIT);
-}
+}*/
 
 /**
  * @brief adjust commutation timing by step amount
  */
-void _BL_timing_step_faster(uint16_t current_setpoint)
+/*void _BL_timing_step_faster(uint16_t current_setpoint)
 {
   BL_set_timing(current_setpoint - (uint16_t)BL_ONE_RAMP_UNIT);
-}
+}*/
 
 /**
   * @brief Accessor for commutation period.
@@ -267,20 +272,19 @@ uint8_t BL_get_opstate(void)
  * @param current_setpoint commutation period
  * @return TRUE: within control limits, FALSE: not within control limits
  */
-bool BL_cl_control(uint16_t current_setpoint)
+static bool BL_cl_control(uint16_t current_setpoint)
 {
   // returns true if plausible conditions for transition to closed-loop
   if ( TRUE == Seq_get_timing_error_p() )
   {
-    const uint8_t ERROR_LIMIT = 50;
     // needs to be small enough to be stable upon transition from to closed-loop
-    const int16_t ERROR_MAX = ERROR_LIMIT;
-    const int16_t ERROR_MIN = -(ERROR_LIMIT);
+    static const int16_t ERROR_MAX = ERROR_LIMIT;
+    static const int16_t ERROR_MIN = -1 * ERROR_LIMIT;
     int16_t timing_error = Seq_get_timing_error();
 
     if ((timing_error > ERROR_MIN) && (timing_error < ERROR_MAX))
     {
-      const uint8_t PROP_GAIN = 10; // inverse of kP
+      static const int16_t PROP_GAIN = 10; // inverse of kP
       int16_t correction = timing_error / PROP_GAIN ;
 
       BL_set_timing(current_setpoint + correction);
@@ -311,26 +315,26 @@ void BL_State_Ctrl(void)
 
     if( BL_ARMING == bl_opstate )
     {
-      const uint16_t ARMING_TIME_100 = 0x08FF;
+      static const uint16_t ARMING_TIME_100 = 0x08FFu;
       static uint16_t atimer = 0;
 // todo: tbd
-      BL_set_timing( 0x0010 ); // set to some small value (sampling vBatt measurement)
+      BL_set_timing( 0x0010u ); // set to some small value (sampling vBatt measurement)
 
       if (atimer < ARMING_TIME_100)
       {
         atimer += 1;
         inp_dutycycle = 0;
         // brief delay after poweron
-        if (atimer > 0x0200)
+        if (atimer > 0x0200u)
         {
           // hold the current/PWM at fixed level
           inp_dutycycle = PWM_PD_ARMING;
         }
         // turn off at regular interval to make distint beeping (more like clicking!) sound
 //        if (atimer & 0x00C0)
-        if (atimer & 0x01C0)
+        if (atimer & 0x01C0u)
         {
-          inp_dutycycle = 0;
+          inp_dutycycle = 0u;
         }
       }
       else
@@ -394,9 +398,9 @@ void BL_State_Ctrl(void)
     }
     else if( BL_CLS_LOOP == bl_opstate )
     {
-#define CL_FAULT_CNTR 2000
-      const uint8_t FAULT_INCR = 20;
-      const uint8_t FAULT_DECR = 1;
+#define CL_FAULT_CNTR 2000u
+      static const uint16_t FAULT_INCR = 20;
+      static const uint16_t FAULT_DECR = 1;
       static uint16_t fault_counter = CL_FAULT_CNTR;
 
       // controller returns false upon failed control step
@@ -434,8 +438,6 @@ void BL_State_Ctrl(void)
  */
 void BL_Commutation_Step(void)
 {
-  static uint16_t frame_timer = 0;
-
   switch( BL_get_opstate() )
   {
   case BL_ARMING:
