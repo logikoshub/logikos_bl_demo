@@ -250,15 +250,15 @@ void PWM_PhC_Enable(void)
  *    pulse i.e. (1.1 ms : 1.9 ms) i.e. 
  *      servo position = servo pulse time - 1.1 ms
  *
- * @return duration of servo pulse expressed as timer counts, range (0:1600)
+ * @return duration of servo pulse expressed as timer counts, range [0:1023]
  */
 uint16_t PWM_get_servo_position_counts( uint16_t pulse_duration_counts )
 {
   uint16_t servo_position_counts = 0;
 
-  if (pulse_duration_counts > TCC_TIME_ARMING)
+  if (pulse_duration_counts > TCC_TIME_STARTUP)
   {
-    servo_position_counts = pulse_duration_counts - TCC_TIME_ARMING;
+    servo_position_counts = pulse_duration_counts - TCC_TIME_STARTUP;
   }
   return servo_position_counts;
 }

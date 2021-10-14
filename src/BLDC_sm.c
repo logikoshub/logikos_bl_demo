@@ -150,7 +150,7 @@ void BL_reset(void)
 
   Faultm_init();
 
-  BL_set_opstate( BL_STOPPED );  // set the initial control-state
+  BL_set_opstate( BL_STOPPED ); // set the initial control-state
 }
 
 /**
@@ -162,7 +162,7 @@ void BL_reset(void)
  *  UI Speed is shared with background task so this function should
  *  be invoked only from within a CS.
  *
- * @param ui_mspeed_counts The desired motor output in tetms of timer counts
+ * @param ui_mspeed_counts The desired motor output in terms of timer counts
  */
 void BL_set_speed(uint16_t ui_mspeed_counts)
 {
@@ -171,13 +171,13 @@ void BL_set_speed(uint16_t ui_mspeed_counts)
     // Update the dc if speed input greater than ramp start, OR if system already running
     if ((ui_mspeed_counts > PWM_PD_STARTUP) || (0 != BL_motor_speed))
     {
-      BL_motor_speed = ui_mspeed_counts;
+      BL_motor_speed = (BL_motor_speed  + ui_mspeed_counts) / 2;
     }
   }
-  else
+  else // if (0 == PWM_PD_STARTUP)
   {
-    // commanded speed less than low limit so reset - has to ramp again to get started.
-    BL_stop();
+    // allow everything to reset once the throttle is lowered
+    BL_reset(); // BL_stop(); nope
   }
 }
 

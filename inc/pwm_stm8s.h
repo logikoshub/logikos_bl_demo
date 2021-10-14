@@ -68,6 +68,7 @@
 // verify minimum time sensed w/ stick at 0
 #define TCC_TIME_DETECT      (uint16_t)(1000.0 * (1.0 / TCC_TICK_TIME_MSEC)) // tbd
 #define TCC_TIME_ARMING      (uint16_t)(1100.0 * (1.0 / TCC_TICK_TIME_MSEC))
+#define TCC_TIME_STARTUP     (uint16_t)(1388.0 * (1.0 / TCC_TICK_TIME_MSEC)) // 1388 == (2200 + (1600 - 1024)) / 2
 #define TCC_TIME_MAX_THRUST  (uint16_t)(1900.0 * (1.0 / TCC_TICK_TIME_MSEC))
 
 /*

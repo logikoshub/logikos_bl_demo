@@ -97,9 +97,13 @@ ui_key_handler_t;
 
 /* Private variables ---------------------------------------------------------*/
 static uint8_t TaskRdy; // flag for timer interrupt for BG task timing
-static uint8_t Log_Level = 10;
+static uint8_t Log_Level;
 static uint16_t Vsystem;
 static uint16_t UI_Speed; // motor percent speed input from servo or remote UI
+
+#define KEYBOARD_DETECT_WINDOW 60 // 60 * 0.167 mS = 1 second
+static uint8_t Radio_detect_timer;
+static bool Enable_radio_input;
 
 /**
  * @brief Lookup table for UI input handlers
@@ -143,15 +147,16 @@ static void Log_println(int zrof)
   if ( Log_Level > 0)
   {
     printf(
-      "{%04X) UIspd%=%X CtmCt=%04X BLdc=%04X Vs=%04X Sflt=%X RCsigCt=%04X MspdCt=%u Mspd%=%u PWMdc=%04X ERR=%04X ST=%u BR=%04X BF=%04X \r\n",
+      "{%04X) UIspd%=%X CtmCt=%04X BLdc=%04X Vs=%04X Sflt=%X RCsigCt=%04X MspdCt=%04u PWMdc=%03u ERR=%04X ST=%u BR=%04X BF=%04X \r\n",
       Line_Count++,  // increment line count
       UI_Speed, BL_get_timing(), BL_get_speed(),
       Vsystem,
       (int)Faultm_get_status(),
+
       Driver_get_pulse_dur(),
-      Driver_get_servo_position_counts(), // servo posn counts -> motor speed (PWM pulse duration)
-      Driver_get_motor_spd_pcnt(),
+      Driver_get_servo_position_counts(), // servo posn counts -> PWM pulse DC counts [0:1023]
       PWM_get_dutycycle(),
+
       Seq_get_timing_error(),
       (uint16_t)BL_get_opstate(),
       Seq_Get_bemfR(),
@@ -159,27 +164,6 @@ static void Log_println(int zrof)
     );
     Log_Level -= 1;
   }
-}
-
-/*
- * The UI Speed value represents percent of motor speed (0% : 100%), which is
- * proportional to RC radio control servo signal.
- *
- * Servo input will have range of (0:1024?) which can directly be used as the
- * pwm input if the timer prescaler is set such that 16Mhz works out to a
- * PWM period of    0.0000000625 * 2 * 1024 = 128 uS so 7812.5 Hz .
- *
- * The standard RC framerate is 50 Hz or 20 mS. With pertask updating at 60Hz,
- * then the timely response of the system should be assured.
- */
-static void ui_set_motor_spd(uint16_t ui_motor_speed)
-{
-#ifdef ANLG_SLIDER
-  uint16_t adc_tmp16 = ADC1_GetBufferValue( ADC1_CHANNEL_3 ); // ISR safe ... hmmmm
-  Analog_slider = adc_tmp16 / 4; // [ 0: 1023 ] -> [ 0: 255 ]
-#endif
-
-  BL_set_speed( ui_motor_speed );
 }
 
 /*
@@ -216,7 +200,7 @@ static void m_stop(void)
 
   UI_Speed = 0;
 
-  printf("###\r\n");
+//  printf("###\r\n");
 
   Log_Level = 1; // allow one more status line printfd to terminal then stops log output
   Log_println(1 /* clear line count */ );
@@ -263,14 +247,19 @@ static ui_handlrp_t handle_term_inp(void)
     {
       if (key == (char)_GET_KEY_CODE( n ))
       {
-// any terminal output specific to the key or handelr need to be done here and
+// any terminal output specific to the key or handler needs to be done here and
 // not in the handler itself because the handler is to be called from w/i the CS
         fp =_GET_UI_HDLRP( n );
         break;
       }
     }
 // anykey ...
-    Log_Level = 255;// default anykey enable continous/verbous log
+    Log_Level = 255;// by default, any-key enables continous/verbose log
+    if (Radio_detect_timer < KEYBOARD_DETECT_WINDOW)
+    {
+      Enable_radio_input = FALSE;
+      Radio_detect_timer = KEYBOARD_DETECT_WINDOW;
+    }
   }
   return fp;
 }
@@ -304,12 +293,12 @@ void Print_banner(void)
  */
 static void Periodic_task(void)
 {
-  static uint8_t powerup_radio_detect_window = 10; // 10 * 0.167 mS
   static bool rf_enabled = FALSE;
+  static uint16_t servo_pulse_sma = 0;
 
   BL_RUNSTATE_t bl_state;
 
-// invoke the terminal input and ui speed subs,
+// Invoke the terminal input and ui speed subroutines.
 // If there is a valid key input, a function pointer to the input handler is
 // returned. This is done prior to entering a Critical Section (DI/EI) in which
 // it will then be safe to invoke the input handler function (e.g. can call
@@ -326,48 +315,42 @@ static void Periodic_task(void)
   bl_state = BL_get_state();
 
   // passes the UI percent motor speed to the BL controller
-  if (powerup_radio_detect_window > 0)
+  if (Radio_detect_timer < KEYBOARD_DETECT_WINDOW)
   {
-    powerup_radio_detect_window -= 1;
+    // if any key input inside keyboard detect window, Enable Manual Speed will set True
+    Radio_detect_timer += 1;
+    // todo: if radio detected ... stop looking for key input
+    if ( Driver_get_pulse_dur() > TCC_TIME_DETECT )
+    {
+      Radio_detect_timer = KEYBOARD_DETECT_WINDOW;
+      Enable_radio_input = TRUE;
+    }
   }
   else
   {
     uint16_t cmd_speed;
-    if ((FALSE == rf_enabled) && (Driver_get_pulse_dur() > TCC_TIME_DETECT))
+    if (FALSE != Enable_radio_input)
     {
-      // enable RF/RC throttle input, disable throttle input from terminal
-//      rf_enabled = TRUE;
+      servo_pulse_sma = (Driver_get_servo_position_counts() + servo_pulse_sma) / 2;
+      cmd_speed  = servo_pulse_sma;
     }
-
-    cmd_speed = UI_Speed;
-
-    if (rf_enabled)
+    else
     {
-      if (Driver_get_pulse_dur() > TCC_TIME_DETECT)
-      {
-        cmd_speed = Driver_get_servo_position_counts();
-        // Need to detect lost radio - the PWM edge ISRs would stop which would
-        // be difficult to discern unless the stored value is flushed each time.
-        Driver_set_pulse_dur(0);
-      }
-      else
-      {
-        // we have a problem
-        m_stop();
-      }
+      cmd_speed = UI_Speed;
     }
-    ui_set_motor_spd(cmd_speed);
+    BL_set_speed( cmd_speed);
   }
 
+  //Vsystem = (Vsystem + Seq_Get_Vbatt()) / 2;
   Vsystem = Seq_Get_Vbatt();
 
   enableInterrupts();  ///////////////// EI EI O
 
 #if defined( UNDERVOLTAGE_FAULT_ENABLED )
   // update system voltage diagnostic - check plausibilty of Vsys
-  if( BL_IS_RUNNING == bl_state && Vsystem > 0 )
+  if( (BL_IS_RUNNING == bl_state) && (Vsystem > 0) )
   {
-    Faultm_upd(VOLTAGE_NG, (faultm_assert_t)( Vsystem < V_SHUTDOWN_THR) );
+    Faultm_upd(VOLTAGE_NG, (faultm_assert_t)(Vsystem < V_SHUTDOWN_THR));
   }
 #endif
 }
@@ -394,6 +377,7 @@ uint8_t Task_Ready(void)
   {
     is_first = FALSE;
     Print_banner();
+    Enable_radio_input = FALSE;
   }
 
   if (0 != TaskRdy)
