@@ -315,24 +315,26 @@ void BL_State_Ctrl(void)
 
     if( BL_ARMING == bl_opstate )
     {
-      static const uint16_t ARMING_TIME_100 = 0x08FFu;
+			static const uint16_t ARMING_TIME_TOTAL = 0x0900; // 0x08FFu;
+			static const uint16_t ARMING_TIME_DELAY = 0x0200u;
+			static const uint16_t ARMING_TIME_MASK = 0x01C0u;
+			static const uint16_t ARMING_BL_TIMING = 0x0010u;
       static uint16_t atimer = 0;
 // todo: tbd
-      BL_set_timing( 0x0010u ); // set to some small value (sampling vBatt measurement)
+      BL_set_timing( ARMING_BL_TIMING ); // set to some small value (sampling vBatt measurement)
 
-      if (atimer < ARMING_TIME_100)
+      if (atimer < ARMING_TIME_TOTAL)
       {
         atimer += 1;
         inp_dutycycle = 0;
         // brief delay after poweron
-        if (atimer > 0x0200u)
+        if (atimer > ARMING_TIME_DELAY)
         {
           // hold the current/PWM at fixed level
           inp_dutycycle = PWM_PD_ARMING;
         }
         // turn off at regular interval to make distint beeping (more like clicking!) sound
-//        if (atimer & 0x00C0)
-        if (atimer & 0x01C0u)
+        if (atimer & ARMING_TIME_MASK)
         {
           inp_dutycycle = 0u;
         }
