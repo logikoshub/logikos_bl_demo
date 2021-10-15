@@ -110,11 +110,6 @@ uint16_t Driver_get_pulse_dur(void)
   return Pulse_dur;
 }
 
-void Driver_set_pulse_dur(uint16_t duration)
-{
-  Pulse_dur = duration;
-}
-
 /**
  * @brief Converts servo pulse width to servo position
  * @details 100% of servo throttle range resides in the portion of the servo
@@ -130,26 +125,6 @@ uint16_t Driver_get_servo_position_counts(void)
     PWM_get_servo_position_counts( pulse_duration_counts );
 
   return thr_posn_cnt;
-}
-
-/**
- * @brief converts servo pulse width to motor speed percent
- * @details Commanded motor speed is derived from proportional servo pulse
- *  so it is converted to percent of throttle/speed range.
- * @return Motor speed percent (integer).
- */
-uint16_t Driver_get_motor_spd_pcnt(void)
-{
-  uint16_t motor_pcnt_speed = 0;
-  uint16_t pulse_period_counts = Driver_get_pulse_perd();
-  uint16_t pulse_duration_counts = Driver_get_pulse_dur();
-
-// PWM percent duty-cycle is only for display purpose so some loss of precision
-// is ok here and necessary to prevent overflow out of 16-bit unsigned
-  motor_pcnt_speed  = PWM_get_motor_spd_pcnt(
-                        pulse_period_counts, pulse_duration_counts);
-
-  return motor_pcnt_speed;
 }
 
 /**
@@ -248,8 +223,8 @@ void Driver_on_capture_fall(void)
 {
   uint16_t t16 = get_pulse_end() - curr_pulse_start_tm /* get_pulse_start() */;
 
-// apply exponential filter (simple moving average) to smoothe the signal
-  Pulse_dur = (Pulse_dur + t16) >> 1; // sma
+// apply exponential filter (simple moving average) to smooth the signal
+  Pulse_dur = (Pulse_dur + t16) / 2; // sma
 
 // clear test pin
 //    GPIO_WriteLow(LED_GPIO_PORT, (GPIO_Pin_TypeDef)LED_GPIO_PIN);
