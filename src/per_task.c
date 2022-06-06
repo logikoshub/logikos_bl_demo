@@ -25,31 +25,20 @@
 #include "pdu_manager.h"
 
 /* Private defines -----------------------------------------------------------*/
-/*
- * motor speed received from remote UI with integer scaling would ideally provide 1024
- * steps of precision, however to fit uint16, scale factor limited to 65535/100 so
- * slightly less precision than actual radio signal (timer capture) but acceptable
- * i.e.
- *  pwm_motor_speed =   pwm_period_counts * (ui_speed_pcnt / 512) / 100
- *
- * The UI motor speed is for now scaled to the range of the PWM period in
- * clock counts i.e. (0:250) .. this is due to being used as the timing table index.
- */
-#define UI_MSPEED_PCNT_SCALE  512.0  // 0.002% per bit ... note use power of 2 scale factor
+// Stall-voltage threshold must be set low enuogh to avoid false-positive as 
+// the voltage droops on startup and transition out of ramp.
+// The fault can be tested by letting the spinning prop strike a business card.
+// Example of typical measure Vsys with given voltage divider:
+//
+//  Vbatt == 12.5v 10k/(33k+10k) * 12.5v = 2.91v
+//  2.9v * 1024 / 3.3v = $0384
+//  observed stall voltage ~$02F0
 
-// Threshold is set low enuogh that the machine doesn't stall
-// thru the lower speed transition into closed-loop control.
-// The fault can be tested by letting the spinning prop disc strike a flimsy
-// obstacle like a 3x5 index card.
-#if defined ( S105_DEV )
-//  Vcc==3.3v  33k/10k @ Vbatt==12.4v
-#define V_SHUTDOWN_THR      0x02C0    // experimentally determined @ 12.4v
-#else
-// applies presently only to the stm8s-Discovery, at 14.2v and ADCref == 5v
-#define V_SHUTDOWN_THR      0x02C0    // experimentally determined!
-#endif
+#define V_SHUTDOWN_THR      0x0260
+
 
 //#define ANLG_SLIDER
+
 
 /* Private function prototypes -----------------------------------------------*/
 // forward declarations for UI input handers
@@ -96,7 +85,10 @@ typedef struct
 ui_key_handler_t;
 
 /* Private variables ---------------------------------------------------------*/
-static uint8_t TaskRdy; // flag for timer interrupt for BG task timing
+
+// shared between ISR and non-ISR context
+static volatile uint8_t TaskRdy; // flag for timer interrupt for BG task timing
+
 static uint8_t Log_Level;
 static uint16_t Vsystem;
 static uint16_t UI_Speed; // motor percent speed input from servo or remote UI
@@ -187,7 +179,7 @@ static void timing_minus(void)
  */
 static void m_start(void)
 {
-//  BL_set_speed( PWM_BL_START );
+//  BL_set_speed( PWM_PCNT_STARTUP );
 }
 
 /*
@@ -207,23 +199,21 @@ static void m_stop(void)
 }
 
 /*
- * motor speed up
+ * motor speed increment (manual control)
  */
 static void spd_plus(void)
 {
-// tbd: steps of 0.5% (scale factor of 512)
-//  if (UI_Speed < S8_MAX)
+  if (UI_Speed < U16_MAX)
   {
     UI_Speed += (uint16_t)MSPEED_PCNT_INCREM_STEP;
   }
 }
 
 /*
- * motor speed down
+ * motor speed decrement (manual control)
  */
 static void spd_minus(void)
 {
-// tbd: steps of 0.5% (scale factor of 512)
   if (UI_Speed > 0)
   {
     UI_Speed -= (uint16_t)MSPEED_PCNT_INCREM_STEP;
@@ -270,8 +260,12 @@ void help_me(void)
   printf("----------------------------------------------\r\n");
   printf("BL Motor Control on STM8 %s\r\n", "Version 0.1");
   printf("Keys:\r\n");
-  printf(" <    >   :  Slower/Faster\r\n");
-  printf(" Space Bar:  stop\r\n");
+  printf("  /  (slash):  start\r\n");
+  printf("   Space Bar:  stop\r\n");
+  printf("   <    >   :  speed-/speed+\r\n");
+#if defined(MAN_TIMING)
+  printf("   [    ]   :  speed+/speed- (manual commutation control)\r\n");
+#endif
   printf("----------------------------------------------\r\n");
   printf("\r\n");
 }
