@@ -25,7 +25,7 @@
 #include "pdu_manager.h"
 
 /* Private defines -----------------------------------------------------------*/
-// Stall-voltage threshold must be set low enuogh to avoid false-positive as 
+// Stall-voltage threshold must be set low enuogh to avoid false-positive as
 // the voltage droops on startup and transition out of ramp.
 // The fault can be tested by letting the spinning prop strike a business card.
 // Example of typical measure Vsys with given voltage divider:
@@ -179,7 +179,8 @@ static void timing_minus(void)
  */
 static void m_start(void)
 {
-//  BL_set_speed( PWM_PCNT_STARTUP );
+  UI_Speed = (uint16_t)(PWM_PD_STARTUP + MSPEED_PCNT_INCREM_STEP);
+  BL_set_speed( UI_Speed );
 }
 
 /*
@@ -191,8 +192,6 @@ static void m_stop(void)
   BL_reset();
 
   UI_Speed = 0;
-
-//  printf("###\r\n");
 
   Log_Level = 1; // allow one more status line printfd to terminal then stops log output
   Log_println(1 /* clear line count */ );
@@ -263,9 +262,7 @@ void help_me(void)
   printf("  /  (slash):  start\r\n");
   printf("   Space Bar:  stop\r\n");
   printf("   <    >   :  speed-/speed+\r\n");
-#if defined(MAN_TIMING)
   printf("   [    ]   :  speed+/speed- (manual commutation control)\r\n");
-#endif
   printf("----------------------------------------------\r\n");
   printf("\r\n");
 }

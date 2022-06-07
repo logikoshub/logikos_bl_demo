@@ -21,32 +21,24 @@
 
 /* Private defines -----------------------------------------------------------*/
 /*
- * precision is 1/TIM2_PWM_PD = 0.4% per count
+ * Commutation timing values at ramp end-points originated from a fixed 
+ * closed-loop timing table, hard-coded for 1100kv motor @ 12.v. 
+ * CTIME SCALAR is a vestige of rescaling the integer tables values which all
+ * a common factor that being the system clock.
  */
-#define PWM_PCNT_ARMING     8.5 // TBD
-#define PWM_PCNT_ALIGN     25.0
-#define PWM_PCNT_RAMPUP    14.0
-#define PWM_PCNT_STARTUP   12.0
-#define PWM_PCNT_CLOOP     PWM_PCNT_STARTUP
-#define PWM_PCNT_SHUTOFF    9.0 // stalls at ~8%
-
-// define pwm pulse times for operation states
-#define PWM_PD_ARMING    PWM_GET_PULSE_COUNTS( PWM_PCNT_ARMING )
-#define PWM_PD_ALIGN     PWM_GET_PULSE_COUNTS( PWM_PCNT_ALIGN )
-#define PWM_PD_RAMPUP    PWM_GET_PULSE_COUNTS( PWM_PCNT_RAMPUP )
-#define PWM_PD_STARTUP   PWM_GET_PULSE_COUNTS( PWM_PCNT_STARTUP )
-#define PWM_PD_CLOOP     PWM_GET_PULSE_COUNTS( PWM_PCNT_CLOOP )
-#define PWM_PD_SHUTOFF   PWM_GET_PULSE_COUNTS( PWM_PCNT_SHUTOFF )
-
-// commutation period at start of ramp (est. @ 12.5v) - (experimental/TBD)
+// commutation period at start of ramp
 #define BL_CT_RAMP_START  (5632.0 * CTIME_SCALAR) // $1600
-// commutation period at end of ramp (est. @ 12.5v) - (experimental/TBD)
+
+// commutation period at end of ramp
 #define BL_CT_RAMP_END    (1760.0 * CTIME_SCALAR) // $06E0
+
 // for some reason this little slowdown at ramp end aids in getting sync (experimental/TBD)
 #define BL_CT_STARTUP     (1866.0 * CTIME_SCALAR) // $074A
 
-// error limit used in BL_cl_control
-// needs to be small enough to be stable upon transition from to closed-loop
+/*
+ * Error limit used in BL_cl_control -
+ * needs to be small enough to be stable upon transition from to closed-loop
+ */
 #define ERROR_LIMIT	50
 
 /**
@@ -54,7 +46,7 @@
  * @details Scale factor relating the commutation-timing ramp data and variables
  *     with the control task rate
  */
-#define CTRL_RATEM  4
+#define CTRL_RATEM  4.0
 
 // The control-frame rate becomes factored into the integer ramp-step
 #define BL_ONE_RAMP_UNIT  (1.125 * CTRL_RATEM * CTIME_SCALAR) // GN: 07-JUN-22 BL-21.4 @13.0v needed slower rampup 
@@ -194,18 +186,17 @@ uint16_t BL_get_speed(void)
 /**
  * @brief adjust commutation timing by step amount
  */
-/*void _BL_timing_step_slower(uint16_t current_setpoint)
+void BL_timing_step_slower()
 {
-  BL_set_timing(current_setpoint + (uint16_t)BL_ONE_RAMP_UNIT);
-}*/
-
+  BL_set_timing(BL_comm_period + (uint16_t)BL_ONE_RAMP_UNIT);
+}
 /**
  * @brief adjust commutation timing by step amount
  */
-/*void _BL_timing_step_faster(uint16_t current_setpoint)
+void BL_timing_step_faster()
 {
-  BL_set_timing(current_setpoint - (uint16_t)BL_ONE_RAMP_UNIT);
-}*/
+  BL_set_timing(BL_comm_period - (uint16_t)BL_ONE_RAMP_UNIT);
+}
 
 /**
   * @brief Accessor for commutation period.
