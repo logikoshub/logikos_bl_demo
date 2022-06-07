@@ -57,7 +57,7 @@
 #define CTRL_RATEM  4
 
 // The control-frame rate becomes factored into the integer ramp-step
-#define BL_ONE_RAMP_UNIT  (1.5 * CTRL_RATEM * CTIME_SCALAR)
+#define BL_ONE_RAMP_UNIT  (1.125 * CTRL_RATEM * CTIME_SCALAR) // GN: 07-JUN-22 BL-21.4 @13.0v needed slower rampup 
 
 // length of alignment step (experimentally determined w/ 1100kv @12.5v)
 #define BL_TIME_ALIGN  (200 * 1) // N frames @ 1 ms / frame
@@ -171,13 +171,13 @@ void BL_set_speed(uint16_t ui_mspeed_counts)
     // Update the dc if speed input greater than ramp start, OR if system already running
     if ((ui_mspeed_counts > PWM_PD_STARTUP) || (0 != BL_motor_speed))
     {
-      BL_motor_speed = (BL_motor_speed  + ui_mspeed_counts) / 2;
+      BL_motor_speed = (BL_motor_speed + ui_mspeed_counts) / 2;  // sma
     }
   }
-  else // if (0 == PWM_PD_STARTUP)
+  else // if (ui_mspeed_counts <= 0)
   {
     // allow everything to reset once the throttle is lowered
-    BL_reset(); // BL_stop(); nope
+    BL_reset();
   }
 }
 
@@ -311,23 +311,24 @@ void BL_State_Ctrl(void)
   else
   {
     BL_State_T bl_opstate = BL_get_opstate();
+
     inp_dutycycle = BL_get_speed(); // default pwm use speed input from UI
 
     if( BL_ARMING == bl_opstate )
     {
-			static const uint16_t ARMING_TIME_TOTAL = 0x0900; // 0x08FFu;
-			static const uint16_t ARMING_TIME_DELAY = 0x0200u;
-			static const uint16_t ARMING_TIME_MASK = 0x01C0u;
-			static const uint16_t ARMING_BL_TIMING = 0x0010u;
+      static const uint16_t ARMING_TIME_TOTAL = 0x0900u;
+      static const uint16_t ARMING_TIME_DELAY = 0x0200u;
+      static const uint16_t ARMING_TIME_MASK = 0x01C0u;
+      static const uint16_t ARMING_BL_TIMING = 0x0010u;
       static uint16_t atimer = 0;
-// todo: tbd
+
       BL_set_timing( ARMING_BL_TIMING ); // set to some small value (sampling vBatt measurement)
 
       if (atimer < ARMING_TIME_TOTAL)
       {
         atimer += 1;
         inp_dutycycle = 0;
-        // brief delay after poweron
+        // brief delay after power-on
         if (atimer > ARMING_TIME_DELAY)
         {
           // hold the current/PWM at fixed level
@@ -336,7 +337,7 @@ void BL_State_Ctrl(void)
         // turn off at regular interval to make distint beeping (more like clicking!) sound
         if (atimer & ARMING_TIME_MASK)
         {
-          inp_dutycycle = 0u;
+          inp_dutycycle = 0;
         }
       }
       else
@@ -371,11 +372,13 @@ void BL_State_Ctrl(void)
     {
       // grab the current commutation period setpoint to handoff to ramp control
       uint16_t bl_timing_setpt = BL_get_timing();
-      // table-lookup for the target commutation timing period at end of ramp
+
+      // set target commutation timing period for end of ramp
       uint16_t tgt_timing_setpt = (uint16_t)BL_CT_RAMP_END;
 
       // only needs to ramp in 1 direction
       timing_ramp_control(bl_timing_setpt, tgt_timing_setpt);
+
       // Set duty-cycle for rampup somewhere between 10-25% (tbd)
       inp_dutycycle = PWM_PD_RAMPUP;
 
@@ -388,9 +391,11 @@ void BL_State_Ctrl(void)
     {
       // get the present BL commutation timing setpoint
       uint16_t bl_timing_setpt = BL_get_timing();
+
       // control setpoint is Startup Speed, update the commutation timing
       timing_ramp_control(bl_timing_setpt, (uint16_t)BL_CT_STARTUP);
-      inp_dutycycle = PWM_PD_STARTUP;
+
+      inp_dutycycle = PWM_PD_STARTUP; // throttle back to low-idle speed
 
       // controller returns true upon successful control step
       if (TRUE == BL_cl_control(bl_timing_setpt) /* (BL_motor_speed > PWM_PD_CLOOP) */ )
