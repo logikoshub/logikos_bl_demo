@@ -52,7 +52,7 @@ void main(int argc, char **argv)
   BL_reset();
   BL_set_opstate( BL_ARMING );  // set the initial control-state 
 
-  printf("\n\rProgram Startup (%d)\n\r", (uint16_t)BL_get_opstate() );
+  printf("\n\rProgram Startup (%hd)\n\r", BL_get_opstate() );
 
   enableInterrupts(); // interrupts are globally disabled by default
 
