@@ -33,8 +33,10 @@
 //  Vbatt == 12.5v 10k/(33k+10k) * 12.5v = 2.91v
 //  2.9v * 1024 / 3.3v = $0384
 //  observed stall voltage ~$02F0
-
 #define V_SHUTDOWN_THR      0x0260
+
+// each +/- press of speed keys inc/decrements this amount (100% -> 1000/4 = 250 steps)
+#define MSPEED_PCNT_INCREM_STEP    (PWM_PERIOD_COUNTS / 250)
 
 
 //#define ANLG_SLIDER
@@ -139,15 +141,16 @@ static void Log_println(int zrof)
   if ( Log_Level > 0)
   {
     printf(
-      "{%04X) UIspd%=%X CtmCt=%04X BLdc=%04X Vs=%04X Sflt=%X RCsigCt=%04X MspdCt=%04u PWMdc=%03u ERR=%04X ST=%u BR=%04X BF=%04X \r\n",
+      "{%04X) PWMDC%=%X CtmCt=%04X BLdc=%04X Vs=%04X Sflt=%X RCsigCt=%04X MspdCt=%04u ERR=%04X ST=%u BR=%04X BF=%04X \r\n",
       Line_Count++,  // increment line count
-      UI_Speed, BL_get_timing(), BL_get_speed(),
+      PWM_get_dutycycle(), 
+			BL_get_timing(), 
+			BL_get_speed(), // UI_Speed, 
       Vsystem,
       (int)Faultm_get_status(),
 
       Driver_get_pulse_dur(),
       Driver_get_servo_position_counts(), // servo posn counts -> PWM pulse DC counts [0:1023]
-      PWM_get_dutycycle(),
 
       Seq_get_timing_error(),
       (uint16_t)BL_get_opstate(),
@@ -339,7 +342,7 @@ static void Periodic_task(void)
 
 #if defined( UNDERVOLTAGE_FAULT_ENABLED )
   // update system voltage diagnostic - check plausibilty of Vsys
-  if( (BL_IS_RUNNING == bl_state) && (Vsystem > 0) )
+  if ((BL_IS_RUNNING == bl_state) && (Vsystem > 0))
   {
     Faultm_upd(VOLTAGE_NG, (faultm_assert_t)(Vsystem < V_SHUTDOWN_THR));
   }
