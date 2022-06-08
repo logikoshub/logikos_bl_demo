@@ -21,8 +21,8 @@
 
 /* Private defines -----------------------------------------------------------*/
 /*
- * Commutation timing values at ramp end-points originated from a fixed 
- * closed-loop timing table, hard-coded for 1100kv motor @ 12.v. 
+ * Commutation timing values at ramp end-points originated from a fixed
+ * closed-loop timing table, hard-coded for 1100kv motor @ 12.v.
  * CTIME SCALAR is a vestige of rescaling the integer tables values which all
  * a common factor that being the system clock.
  */
@@ -49,10 +49,15 @@
 #define CTRL_RATEM  4.0
 
 // The control-frame rate becomes factored into the integer ramp-step
-#define BL_ONE_RAMP_UNIT  (1.125 * CTRL_RATEM * CTIME_SCALAR) // GN: 07-JUN-22 BL-21.4 @13.0v needed slower rampup 
+#define BL_ONE_RAMP_UNIT  (1.125 * CTRL_RATEM * CTIME_SCALAR) // GN: 07-JUN-22 BL-21.4 @13.0v needed slower rampup
 
 // length of alignment step (experimentally determined w/ 1100kv @12.5v)
 #define BL_TIME_ALIGN  (200 * 1) // N frames @ 1 ms / frame
+
+
+// sets the rate of change of the commanded motor speed
+#define BL_SPEED_RAMP_STEP    (PWM_PERIOD_COUNTS / 250)
+
 
 /* Private types -----------------------------------------------------------*/
 
@@ -158,15 +163,15 @@ void BL_reset(void)
  */
 void BL_set_speed(uint16_t ui_mspeed_counts)
 {
-  if( ui_mspeed_counts > PWM_PD_SHUTOFF )
+  if (ui_mspeed_counts > PWM_PD_SHUTOFF)
   {
     // Update the dc if speed input greater than ramp start, OR if system already running
     if ((ui_mspeed_counts > PWM_PD_STARTUP) || (0 != BL_motor_speed))
     {
-      BL_motor_speed = (BL_motor_speed + ui_mspeed_counts) / 2;  // sma
+      BL_motor_speed = ui_mspeed_counts;
     }
   }
-  else // if (ui_mspeed_counts <= 0)
+  else // if (ui_mspeed_counts <= PD_SHUTOFF)
   {
     // allow everything to reset once the throttle is lowered
     BL_reset();
@@ -266,7 +271,7 @@ uint8_t BL_get_opstate(void)
 static bool BL_cl_control(uint16_t current_setpoint)
 {
   // returns true if plausible conditions for transition to closed-loop
-  if ( TRUE == Seq_get_timing_error_p() )
+  if (FALSE != Seq_get_timing_error_p())
   {
     // needs to be small enough to be stable upon transition from to closed-loop
     static const int16_t ERROR_MAX = ERROR_LIMIT;
@@ -287,6 +292,25 @@ static bool BL_cl_control(uint16_t current_setpoint)
 }
 
 /**
+ * @brief step the motor speed from the present operation point toward the input speed setpoint
+ */
+uint16_t bl_get_ramped_speed(uint16_t input_speed)
+{
+  // get the presently set speed/duty-cycle as default
+  uint16_t ramped_speed = PWM_get_dutycycle();
+
+  if (ramped_speed < input_speed)
+  {
+    ramped_speed += 1u; // +BL_SPEED_RAMP_STEP ... TODO? use fixed-point macro and make range-check robust
+  }
+  else if (ramped_speed > input_speed)
+  {
+    ramped_speed -= 1u; // -BL_SPEED_RAMP_STEP ... TODO? use fixed-point macro and make range-check robust
+  }
+  return ramped_speed;
+}
+
+/**
  * @brief  Implement control task (fixed exec rate of ~1ms).
  */
 void BL_State_Ctrl(void)
@@ -303,9 +327,8 @@ void BL_State_Ctrl(void)
   {
     BL_State_T bl_opstate = BL_get_opstate();
 
-    inp_dutycycle = BL_get_speed(); // default pwm use speed input from UI
-
-    if( BL_ARMING == bl_opstate )
+    // note: bl state is only set to ARMING at power-on/reset
+    if (BL_ARMING == bl_opstate)
     {
       static const uint16_t ARMING_TIME_TOTAL = 0x0900u;
       static const uint16_t ARMING_TIME_DELAY = 0x0200u;
@@ -336,9 +359,11 @@ void BL_State_Ctrl(void)
         BL_reset(); // reset again to be sure motor-drive/PWM reinitialized
       }
     }
-    else  if( BL_STOPPED == BL_get_opstate() )
+    else if (BL_STOPPED == BL_get_opstate())
     {
-      if (inp_dutycycle > 0)
+      // check if the motor startup should be initiated
+      uint16_t bl_uispeed = BL_get_speed();
+      if (bl_uispeed > 0)
       {
         BL_set_opstate( BL_ALIGN );
         BL_optimer = BL_TIME_ALIGN;
@@ -347,7 +372,7 @@ void BL_State_Ctrl(void)
         BL_set_timing( (uint16_t)BL_CT_RAMP_START );
       }
     }
-    else if( BL_ALIGN == bl_opstate )
+    else if (BL_ALIGN == bl_opstate)
     {
       if (BL_optimer > 0)
       {
@@ -359,7 +384,7 @@ void BL_State_Ctrl(void)
         BL_set_opstate(BL_RAMPUP);
       }
     }
-    else if( BL_RAMPUP == bl_opstate )
+    else if (BL_RAMPUP == bl_opstate)
     {
       // grab the current commutation period setpoint to handoff to ramp control
       uint16_t bl_timing_setpt = BL_get_timing();
@@ -370,7 +395,7 @@ void BL_State_Ctrl(void)
       // only needs to ramp in 1 direction
       timing_ramp_control(bl_timing_setpt, tgt_timing_setpt);
 
-      // Set duty-cycle for rampup somewhere between 10-25% (tbd)
+      // Set PWM duty-cycle for rampup
       inp_dutycycle = PWM_PD_RAMPUP;
 
       if (bl_timing_setpt <= tgt_timing_setpt)
@@ -378,23 +403,39 @@ void BL_State_Ctrl(void)
         BL_set_opstate( BL_OPN_LOOP );
       }
     }
-    else if( BL_OPN_LOOP == bl_opstate )
+
+    else if (BL_OPN_LOOP == bl_opstate)
     {
       // get the present BL commutation timing setpoint
       uint16_t bl_timing_setpt = BL_get_timing();
 
       // control setpoint is Startup Speed, update the commutation timing
+      // There is sort of an assumption here that the ramp-up over-shot the
+      // speed (commutation period) and should now back off to the "startup"
+      // timing. Unfortunately the exact values of those operating points are/were
+      // tied to a static open-loop timing table for 1100kv motor at precisely 12.5v
+      // Nonetheless syncing seems to work better to back the commutation timing
+      //  off at this point. A new addition now is that here the real speed (PWM-DC) 
+      // to ramped to the user input speed while waiting for sync to occur.
       timing_ramp_control(bl_timing_setpt, (uint16_t)BL_CT_STARTUP);
 
-      inp_dutycycle = PWM_PD_STARTUP; // throttle back to low-idle speed
-
       // controller returns true upon successful control step
-      if (TRUE == BL_cl_control(bl_timing_setpt) /* (BL_motor_speed > PWM_PD_CLOOP) */ )
+      if (FALSE != BL_cl_control(bl_timing_setpt))
       {
         BL_set_opstate( BL_CLS_LOOP );
+        // start ramping speed (PWM duty-cycle) toward UI input speed
+        inp_dutycycle = bl_get_ramped_speed(BL_get_speed());
+      }
+      else
+      {
+//        inp_dutycycle = PWM_get_dutycycle(); // hold the duty-cycle where it is
+        // Needs to ramp the speed in order to converge with comm timing?
+//        inp_dutycycle = bl_get_ramped_speed(BL_get_speed()); // this might be ok
+        inp_dutycycle = bl_get_ramped_speed(PWM_PD_STARTUP); // shoot toward lower speed until CL kicks in?
+
       }
     }
-    else if( BL_CLS_LOOP == bl_opstate )
+    else if (BL_CLS_LOOP == bl_opstate)
     {
 #define CL_FAULT_CNTR 2000u
       static const uint16_t FAULT_INCR = 20;
@@ -402,8 +443,9 @@ void BL_State_Ctrl(void)
       static uint16_t fault_counter = CL_FAULT_CNTR;
 
       // controller returns false upon failed control step
-      if (TRUE == BL_cl_control(BL_get_timing()))
+      if (FALSE != BL_cl_control(BL_get_timing()))
       {
+        // if in-control, fill or reset leaky bucket
         if (fault_counter < CL_FAULT_CNTR)
         {
           // fault_counter += FAULT_INCR;
@@ -412,19 +454,25 @@ void BL_State_Ctrl(void)
       }
       else
       {
-        // tends to fault at cutover to CL ... use count to suppress, and also
-        // throw a fault if max number of faults exceeded during motor run
+        // tends to fault at cutover to CL ... use leaky-bucket to suppress
         if (fault_counter > 0)
         {
           fault_counter -= FAULT_DECR;
         }
         else
         {
+          // ideally, the system might be able to remain running opeon-loop at current
+          // setpoints even once control is lost
+//          BL_set_opstate( BL_OPN_LOOP );
           Faultm_set(FAULT_1);
         }
       }
+      // allow user speed input
+      inp_dutycycle = bl_get_ramped_speed(BL_get_speed());
     }
+    // end '0 == Faultm_get_status'
   }
+
   // pwm duty-cycle is propogated to timer peripheral at next commutation step
   PWM_set_dutycycle( inp_dutycycle );
 }
