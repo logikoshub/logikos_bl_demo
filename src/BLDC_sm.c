@@ -327,9 +327,15 @@ void BL_State_Ctrl(void)
   {
     BL_State_T bl_opstate = BL_get_opstate();
 
-    // note: bl state is only set to ARMING at power-on/reset
-    if (BL_ARMING == bl_opstate)
+    if (BL_MANUAL == bl_opstate)
     {
+      // allow motor-speed/PWM-duty-cycle set to UI input (no ramping)
+      inp_dutycycle = BL_get_speed();
+    }
+
+    else if (BL_ARMING == bl_opstate)
+    {
+      // bl state is only set to ARMING at power-on/reset
       static const uint16_t ARMING_TIME_TOTAL = 0x0900u;
       static const uint16_t ARMING_TIME_DELAY = 0x0200u;
       static const uint16_t ARMING_TIME_MASK = 0x01C0u;
@@ -432,7 +438,6 @@ void BL_State_Ctrl(void)
         // Needs to ramp the speed in order to converge with comm timing?
 //        inp_dutycycle = bl_get_ramped_speed(BL_get_speed()); // this might be ok
         inp_dutycycle = bl_get_ramped_speed(PWM_PD_STARTUP); // shoot toward lower speed until CL kicks in?
-
       }
     }
     else if (BL_CLS_LOOP == bl_opstate)
@@ -491,6 +496,7 @@ void BL_Commutation_Step(void)
     // keep sector 0 on until timeout
     Sequence_Step_0();
     break;
+  case BL_MANUAL:
   case BL_RAMPUP:
   case BL_OPN_LOOP:
   case BL_CLS_LOOP:

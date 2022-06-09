@@ -44,6 +44,8 @@
 
 /* Private function prototypes -----------------------------------------------*/
 // forward declarations for UI input handers
+static void auto_mode(void);
+static void manual_mode(void);
 static void timing_plus(void);
 static void timing_minus(void);
 static void spd_plus(void);
@@ -65,6 +67,8 @@ typedef void (*ui_handlrp_t)( void );
  */
 typedef enum
 {
+  MANUAL_MODE = 'm',
+  AUTO_MODE   = 'a',
   COMM_PLUS   = ']',
   COMM_MINUS  = '[',
   M_STOP      = ' ', // space bar
@@ -104,15 +108,15 @@ static bool Enable_radio_input;
  */
 static const ui_key_handler_t ui_keyhandlers_tb[] =
 {
-#ifdef ENABLE_MAN_TIMING
-  {COMM_PLUS,  timing_plus},
-  {COMM_MINUS, timing_minus},
-#endif
-  {SPD_PLUS,   spd_plus},
-  {SPD_MINUS,  spd_minus},
-  {M_STOP,     m_stop},
-  {M_START,    m_start},
-  {HELP_ME,    help_me}
+  {AUTO_MODE,   auto_mode},
+  {MANUAL_MODE, manual_mode},
+  {COMM_PLUS,   timing_plus},
+  {COMM_MINUS,  timing_minus},
+  {SPD_PLUS,    spd_plus},
+  {SPD_MINUS,   spd_minus},
+  {M_STOP,      m_stop},
+  {M_START,     m_start},
+  {HELP_ME,     help_me}
 };
 
 // macros to help make the LUT slightly more encapsulated
@@ -143,9 +147,9 @@ static void Log_println(int zrof)
     printf(
       "{%04X) PWMDC%=%X CtmCt=%04X BLdc=%04X Vs=%04X Sflt=%X RCsigCt=%04X MspdCt=%04u ERR=%04X ST=%u BR=%04X BF=%04X \r\n",
       Line_Count++,  // increment line count
-      PWM_get_dutycycle(), 
-			BL_get_timing(), 
-			BL_get_speed(), // UI_Speed, 
+      PWM_get_dutycycle(),
+      BL_get_timing(),
+      BL_get_speed(),
       Vsystem,
       (int)Faultm_get_status(),
 
@@ -162,20 +166,41 @@ static void Log_println(int zrof)
 }
 
 /*
- * handlers for UI events must be short as they are invoked in ISR context
+ * Handlers for UI events
+ * Must be short as they are invoked in ISR context
  */
-#ifdef ENABLE_MAN_TIMING
-// for development user only
+/*
+ * select manual control mode
+*/
+static void manual_mode(void)
+{
+  // disconnects the controller, leaving all operating points where they are
+  BL_set_opstate(BL_MANUAL);
+}
+/*
+ * select auto control mode
+*/
+static void auto_mode(void)
+{
+  // sets open loop, from where the controller will transition to closed-loop
+  // if motor will sync
+  BL_set_opstate(BL_OPN_LOOP);
+}
+
+/*
+ * increase commutation period (manual control)
+ */
 static void timing_plus(void)
 {
   BL_timing_step_slower();
 }
-// for development user only
+/*
+ * decrease commutation period (manual control)
+ */
 static void timing_minus(void)
 {
   BL_timing_step_faster();
 }
-#endif
 
 /*
  * motor start
@@ -201,7 +226,7 @@ static void m_stop(void)
 }
 
 /*
- * motor speed increment (manual control)
+ * motor speed increment
  */
 static void spd_plus(void)
 {
@@ -262,9 +287,10 @@ void help_me(void)
   printf("----------------------------------------------\r\n");
   printf("BL Motor Control on STM8 %s\r\n", "Version 0.1");
   printf("Keys:\r\n");
-  printf("  /  (slash):  start\r\n");
-  printf("   Space Bar:  stop\r\n");
+  printf("   / (slash):  start\r\n");
   printf("   <    >   :  speed-/speed+\r\n");
+  printf("   Space Bar:  stop\r\n");
+  printf("   m        :  toggle auto/manual control\r\n");
   printf("   [    ]   :  speed+/speed- (manual commutation control)\r\n");
   printf("----------------------------------------------\r\n");
   printf("\r\n");
@@ -326,13 +352,13 @@ static void Periodic_task(void)
     if (FALSE != Enable_radio_input)
     {
       servo_pulse_sma = (Driver_get_servo_position_counts() + servo_pulse_sma) / 2;
-      cmd_speed  = servo_pulse_sma;
+      cmd_speed = servo_pulse_sma;
     }
     else
     {
       cmd_speed = UI_Speed;
     }
-    BL_set_speed( cmd_speed);
+    BL_set_speed(cmd_speed);
   }
 
   //Vsystem = (Vsystem + Seq_Get_Vbatt()) / 2;

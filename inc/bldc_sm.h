@@ -67,6 +67,7 @@ typedef enum
   BL_RAMPUP,
   BL_OPN_LOOP,
   BL_CLS_LOOP,
+  BL_MANUAL,
   BL_INVALID
 }
 BL_State_T;
