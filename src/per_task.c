@@ -15,7 +15,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stddef.h> // NULL
-// app headers
+// app headers - there are several needed for logging system data
 #include "mcu_stm8s.h"
 #include "sequence.h"
 #include "bldc_sm.h"
@@ -33,13 +33,10 @@
 //  Vbatt == 12.5v 10k/(33k+10k) * 12.5v = 2.91v
 //  2.9v * 1024 / 3.3v = $0384
 //  observed stall voltage ~$02F0
-#define V_SHUTDOWN_THR      0x0260
+#define V_SHUTDOWN_THR      0x0280 // GN: 6/14/2022
 
 // each +/- press of speed keys inc/decrements this amount (100% -> 1000/4 = 250 steps)
 #define MSPEED_PCNT_INCREM_STEP    (PWM_PERIOD_COUNTS / 250)
-
-
-//#define ANLG_SLIDER
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -210,7 +207,6 @@ static void m_start(void)
   UI_Speed = (uint16_t)(PWM_PD_STARTUP + MSPEED_PCNT_INCREM_STEP);
   BL_set_speed( UI_Speed );
 }
-
 /*
  * motor stop
  */
@@ -235,7 +231,6 @@ static void spd_plus(void)
     UI_Speed += (uint16_t)MSPEED_PCNT_INCREM_STEP;
   }
 }
-
 /*
  * motor speed decrement (manual control)
  */
@@ -289,9 +284,9 @@ void help_me(void)
   printf("Keys:\r\n");
   printf("   / (slash):  start\r\n");
   printf("   <    >   :  speed-/speed+\r\n");
-  printf("   Space Bar:  stop\r\n");
   printf("   m        :  toggle auto/manual control\r\n");
   printf("   [    ]   :  speed+/speed- (manual commutation control)\r\n");
+  printf("   Space Bar:  stop\r\n");
   printf("----------------------------------------------\r\n");
   printf("\r\n");
 }
@@ -303,6 +298,16 @@ void help_me(void)
 void Print_banner(void)
 {
   help_me();
+}
+
+/**
+ * @brief  Extern function for system reset
+ */
+void UI_Stop(void)
+{
+  m_stop();
+  BL_set_opstate( BL_ARMING );  // set the initial control-state
+  Log_Level = 10; // show some information on the terminal
 }
 
 /**
@@ -361,7 +366,6 @@ static void Periodic_task(void)
     BL_set_speed(cmd_speed);
   }
 
-  //Vsystem = (Vsystem + Seq_Get_Vbatt()) / 2;
   Vsystem = Seq_Get_Vbatt();
 
   enableInterrupts();  ///////////////// EI EI O
