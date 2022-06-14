@@ -15,13 +15,26 @@
  */
 
 /* Includes ------------------------------------------------------------------*/
-
 // stm8s header is provided by the tool chain and is needed for typedefs of uint etc.
 #include <stm8s.h>
 #include "pwm_stm8s.h" // externalized macros used internally
 
-
 /* Private defines -----------------------------------------------------------*/
+/**
+ * @brief convert raw servo position counts to integer percent
+ *
+ * @details
+ *   100% * SERVO_POSN / SERVO_RANGE
+ *
+ *  Integer factor of 2 is factored out of numerator and denominator terms to
+ *  avoid overflow out of 16-bits
+ *
+ * @param  SERVO_POSITION_COUNTS, range (0:3600)
+ *
+ */
+#define PWM_MSPEED_PERCENT( _SERVO_POSITION_COUNTS_ )  \
+  ( (100.0 / 2 ) * ( _SERVO_POSITION_COUNTS_ ) / ( TCC_THRTTLE_RANGE / 2 ) )
+
 
 /* Private types -----------------------------------------------------------*/
 
@@ -41,15 +54,14 @@ static uint16_t global_uDC;
  */
 void All_phase_stop(void)
 {
-// kill the driver signals
-    PWM_PhA_Disable();
-    PWM_PhA_HB_DISABLE();
+  PWM_PhA_Disable();
+  PWM_PhA_HB_DISABLE();
 
-    PWM_PhB_Disable();
-    PWM_PhB_HB_DISABLE();
+  PWM_PhB_Disable();
+  PWM_PhB_HB_DISABLE();
 
-    PWM_PhC_Disable();
-    PWM_PhC_HB_DISABLE();
+  PWM_PhC_Disable();
+  PWM_PhC_HB_DISABLE();
 }
 
 /**
@@ -57,7 +69,7 @@ void All_phase_stop(void)
  */
 uint16_t PWM_get_dutycycle(void)
 {
-    return global_uDC;
+  return global_uDC;
 }
 
 /**
@@ -65,13 +77,12 @@ uint16_t PWM_get_dutycycle(void)
  */
 void PWM_set_dutycycle(uint16_t global_dutycycle)
 {
-    global_uDC = global_dutycycle;
+  global_uDC = global_dutycycle;
 }
-
 /** @cond */ // hide the low-level code
 
 /*
- * The S105 dev board unfortunately does not let the TIM2 CH3 pin (unless by alt. fundtion)
+ * The S105 dev board only exposes TIM2 CH3 pin by alternate function
  */
 #if defined ( S105_DISCOVERY ) || defined ( S003_DEV )
 /*
@@ -80,7 +91,7 @@ void PWM_set_dutycycle(uint16_t global_dutycycle)
  *
  * 100% spped (0:1600) 100% PWM  results in 10 kHz PWM w/ prescale=1 @ 16Mhz
  *               0.000125 S / (1/16Mhz) * 1600 = 0.0001
- *               1 / 0.0001 = 10000  
+ *               1 / 0.0001 = 10000
  */
 #define TIM2_PRESCALER   TIM2_PRESCALER_2
 
@@ -90,7 +101,7 @@ void PWM_set_dutycycle(uint16_t global_dutycycle)
 
 void PWM_setup(void)
 {
-/* TIM2 Peripheral Configuration */
+  /* TIM2 Peripheral Configuration */
   TIM2_DeInit();
 
   /* Set TIM2 Frequency to 2Mhz */  /*  5/6/21 :  argument TIM2_Prescaler is 8-bit */
@@ -119,35 +130,35 @@ void PWM_setup(void)
  */
 void PWM_PhA_Disable(void)
 {
-    TIM2_CCxCmd( PWM_TIMER_CHAN_A, DISABLE );
+  TIM2_CCxCmd( PWM_TIMER_CHAN_A, DISABLE );
 }
 
 void PWM_PhB_Disable(void)
 {
-    TIM2_CCxCmd( PWM_TIMER_CHAN_B, DISABLE );
+  TIM2_CCxCmd( PWM_TIMER_CHAN_B, DISABLE );
 }
 
 void PWM_PhC_Disable(void)
 {
-    TIM2_CCxCmd( PWM_TIMER_CHAN_C, DISABLE );
+  TIM2_CCxCmd( PWM_TIMER_CHAN_C, DISABLE );
 }
 
 void PWM_PhA_Enable(void)
 {
-    TIM2_SetCompare1( global_uDC );
-    TIM2_CCxCmd( PWM_TIMER_CHAN_A, ENABLE );
+  TIM2_SetCompare1( global_uDC );
+  TIM2_CCxCmd( PWM_TIMER_CHAN_A, ENABLE );
 }
 
 void PWM_PhB_Enable(void)
 {
-    TIM2_SetCompare2( global_uDC );
-    TIM2_CCxCmd( PWM_TIMER_CHAN_B, ENABLE );
+  TIM2_SetCompare2( global_uDC );
+  TIM2_CCxCmd( PWM_TIMER_CHAN_B, ENABLE );
 }
 
 void PWM_PhC_Enable(void)
 {
-    TIM2_SetCompare3( global_uDC );
-    TIM2_CCxCmd( PWM_TIMER_CHAN_C, ENABLE );
+  TIM2_SetCompare3( global_uDC );
+  TIM2_CCxCmd( PWM_TIMER_CHAN_C, ENABLE );
 }
 
 #elif defined ( S105_DEV )
@@ -162,92 +173,93 @@ void PWM_PhC_Enable(void)
 
 void PWM_setup(void)
 {
-    const uint16_t T1_Period = PWM_PERIOD_COUNTS;
+  const uint16_t T1_Period = PWM_PERIOD_COUNTS;
 
 //    CLK_PeripheralClockConfig (CLK_PERIPHERAL_TIMER1, ENABLE);  // with clocks setup
 
-    TIM1_DeInit();
-/*
- * The counter clock frequency fCK_CNT is equal to fCK_PSC / (PSCR[15:0]+1) (RM0016)
- */
-    TIM1_TimeBaseInit(( TIM1_PRESCALER - 1 ), TIM1_COUNTERMODE_UP, T1_Period, 0);
+  TIM1_DeInit();
+  /*
+   * Refer to ST reference manual RM0016: counter clock frequency fCK_CNT is 
+	 * equal to fCK_PSC / (PSCR[15:0]+1) i.e. 
+   *   fCK_CNT = fCK_PSC / (PSCR[15:0] + 1
+   */
+  TIM1_TimeBaseInit(( TIM1_PRESCALER - 1 ), TIM1_COUNTERMODE_UP, T1_Period, 0);
 
-    /* Channel 2 PWM configuration */
-    TIM1_OC2Init( PWM_MODE,
-                  TIM1_OUTPUTSTATE_ENABLE,
-                  TIM1_OUTPUTNSTATE_ENABLE,
-                  0,
-                  TIM1_OCPOLARITY_LOW,
-                  TIM1_OCNPOLARITY_LOW,
-                  TIM1_OCIDLESTATE_RESET,
-                  TIM1_OCNIDLESTATE_RESET);
+  /* Channel 2 PWM configuration */
+  TIM1_OC2Init( PWM_MODE,
+                TIM1_OUTPUTSTATE_ENABLE,
+                TIM1_OUTPUTNSTATE_ENABLE,
+                0,
+                TIM1_OCPOLARITY_LOW,
+                TIM1_OCNPOLARITY_LOW,
+                TIM1_OCIDLESTATE_RESET,
+                TIM1_OCNIDLESTATE_RESET);
 
-    /* Channel 3 PWM configuration */
-    TIM1_OC3Init( PWM_MODE,
-                  TIM1_OUTPUTSTATE_ENABLE,
-                  TIM1_OUTPUTNSTATE_ENABLE,
-                  0,
-                  TIM1_OCPOLARITY_LOW,
-                  TIM1_OCNPOLARITY_LOW,
-                  TIM1_OCIDLESTATE_RESET,
-                  TIM1_OCNIDLESTATE_RESET);
+  /* Channel 3 PWM configuration */
+  TIM1_OC3Init( PWM_MODE,
+                TIM1_OUTPUTSTATE_ENABLE,
+                TIM1_OUTPUTNSTATE_ENABLE,
+                0,
+                TIM1_OCPOLARITY_LOW,
+                TIM1_OCNPOLARITY_LOW,
+                TIM1_OCIDLESTATE_RESET,
+                TIM1_OCNIDLESTATE_RESET);
 
-    /* Channel 4 PWM configuration */
-    TIM1_OC4Init(PWM_MODE,
-                 TIM1_OUTPUTSTATE_ENABLE,
-                 0,
-                 TIM1_OCPOLARITY_LOW,
-                 TIM1_OCIDLESTATE_RESET);
+  /* Channel 4 PWM configuration */
+  TIM1_OC4Init(PWM_MODE,
+               TIM1_OUTPUTSTATE_ENABLE,
+               0,
+               TIM1_OCPOLARITY_LOW,
+               TIM1_OCIDLESTATE_RESET);
 
-    TIM1_CtrlPWMOutputs(ENABLE);
+  TIM1_CtrlPWMOutputs(ENABLE);
 
-    TIM1_ITConfig(TIM1_IT_UPDATE, ENABLE);  // for triggering ADC capture
-    TIM1_Cmd(ENABLE);
+  TIM1_ITConfig(TIM1_IT_UPDATE, ENABLE);  // for triggering ADC capture
+  TIM1_Cmd(ENABLE);
 }
 /**
  * Control /SD inputs to IR2104
  */
 void PWM_PhA_Disable(void)
 {
-    TIM1_CCxCmd( PWM_TIMER_CHAN_A, DISABLE );
+  TIM1_CCxCmd( PWM_TIMER_CHAN_A, DISABLE );
 }
 
 void PWM_PhB_Disable(void)
 {
-    TIM1_CCxCmd( PWM_TIMER_CHAN_B, DISABLE );
+  TIM1_CCxCmd( PWM_TIMER_CHAN_B, DISABLE );
 }
 
 void PWM_PhC_Disable(void)
 {
-    TIM1_CCxCmd( PWM_TIMER_CHAN_C, DISABLE );
+  TIM1_CCxCmd( PWM_TIMER_CHAN_C, DISABLE );
 }
 
 void PWM_PhA_Enable(void)
 {
-    TIM1_SetCompare2( global_uDC );
-    TIM1_CCxCmd( PWM_TIMER_CHAN_A, ENABLE );
+  TIM1_SetCompare2( global_uDC );
+  TIM1_CCxCmd( PWM_TIMER_CHAN_A, ENABLE );
 }
 
 void PWM_PhB_Enable(void)
 {
-    TIM1_SetCompare3( global_uDC );
-    TIM1_CCxCmd( PWM_TIMER_CHAN_B, ENABLE );
+  TIM1_SetCompare3( global_uDC );
+  TIM1_CCxCmd( PWM_TIMER_CHAN_B, ENABLE );
 }
 
 void PWM_PhC_Enable(void)
 {
-    TIM1_SetCompare4( global_uDC );
-    TIM1_CCxCmd( PWM_TIMER_CHAN_C, ENABLE );
+  TIM1_SetCompare4( global_uDC );
+  TIM1_CCxCmd( PWM_TIMER_CHAN_C, ENABLE );
 }
 #endif // S105
-
 /** @endcond */
 
 
 /**
  * @brief Converts servo pulse width to servo position
  * @details 100% of servo throttle range resides in the portion of the servo
- *    pulse i.e. (1.1 ms : 1.9 ms) i.e. 
+ *    pulse i.e. (1.1 ms : 1.9 ms) i.e.
  *      servo position = servo pulse time - 1.1 ms
  *
  * @return duration of servo pulse expressed as timer counts, range [0:1023]
@@ -269,23 +281,21 @@ uint16_t PWM_get_servo_position_counts( uint16_t pulse_duration_counts )
  *  so it is converted to percent of throttle/speed range.
  *
  * @param pulse_period_counts  servo pulse period in timer counts
- * @param pulse_duration_counts servo pulse duration in timer counts 
+ * @param pulse_duration_counts servo pulse duration in timer counts
  *
  * @return Motor speed percent, integer range (0:1:100)
  */
 uint16_t PWM_get_motor_spd_pcnt(
-         uint16_t pulse_period_counts, uint16_t pulse_duration_counts)
+  uint16_t pulse_period_counts, uint16_t pulse_duration_counts)
 {
-  uint16_t motor_pcnt_speed = 0;
-  uint16_t servo_position_counts = 
-                     PWM_get_servo_position_counts( pulse_duration_counts );
+  uint16_t servo_position_counts =
+    PWM_get_servo_position_counts( pulse_duration_counts );
 
-// PWM percent duty-cycle is only for display purpose so some loss of precision 
-// is ok here and necessary to prevent overflow out of 16-bit unsigned
+  // PWM percent duty-cycle is only for display purpose so some loss of precision
+  // is ok here and necessary to prevent overflow out of 16-bit unsigned
 
-  motor_pcnt_speed = (uint16_t)PWM_MSPEED_PERCENT( servo_position_counts );
+  uint16_t motor_pcnt_speed = (uint16_t)PWM_MSPEED_PERCENT( servo_position_counts );
 
   return motor_pcnt_speed;
 }
-
 /**@}*/ // defgroup

@@ -14,25 +14,25 @@
  */
 /* Includes ------------------------------------------------------------------*/
 #include <stdio.h>
-#include <ctype.h> // isprint
+//#include <ctype.h> // isprint
 
 // app headers
 #include "mcu_stm8s.h"
-#include "bldc_sm.h"
 #include "per_task.h"
 
 
 #ifdef _SDCC_
-// Interrupt vectors must be implemented in the same file that implements main()
 /*
-If you have multiple source files in your project, interrupt service routines
-can be present in any of them, but a prototype of the isr MUST be present or
-included in the file that contains the function main.
+ Interrupt vectors must be implemented in the same file that implements main()
+ If you have multiple source files in your project, interrupt service routines
+ can be present in any of them, but a prototype of the isr MUST be present or
+ included in the file that contains the function main.
 */
 #include "stm8s_it.c"
 #endif
 
 /* Private macro -------------------------------------------------------------*/
+#define VERSION 22165
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -41,18 +41,14 @@ included in the file that contains the function main.
   */
 void main(int argc, char **argv)
 {
-  uint8_t linec = 0;
   uint8_t framecount = 0;
-  uint8_t i = 0;
   (void) argc;
   (void) argv;
 
   MCU_Init();
+  UI_Stop(); // resets and sets  initial control-state to ARMING
 
-  BL_reset();
-  BL_set_opstate( BL_ARMING );  // set the initial control-state 
-
-  printf("\n\rProgram Startup (%hd)\n\r", BL_get_opstate() );
+  printf("\n\rProgram Startup (%hd)\n\r", VERSION);
 
   enableInterrupts(); // interrupts are globally disabled by default
 
@@ -62,7 +58,7 @@ void main(int argc, char **argv)
 //  button input either button would transition from OFF->RAMP
     if (! (( GPIOA->IDR)&(1<<4)))
     {
-//            while( ! (( GPIOA->IDR)&(1<<4)) ); // no concern for debounce for a stop switch
+// while( ! (( GPIOA->IDR)&(1<<4)) ); // no concern for debounce for a stop switch
       disableInterrupts();
       UI_Stop();
       enableInterrupts();
@@ -90,7 +86,7 @@ void main(int argc, char **argv)
 
     if ( TRUE == Task_Ready() )
     {
-// this modulus provides a time reference of approximately 2 Hz (debug/test/dev/usage)
+      // modulus provides a time reference of approximately 2 Hz (debug use)
       if ( ! ((framecount++) % 0x20) )
       {
       }
