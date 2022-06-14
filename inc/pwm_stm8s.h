@@ -27,9 +27,11 @@
  */
 #define PWM_PERIOD_COUNTS  1024
 
-
 /**
  * @brief Compute PWM timer counts from percent duty-cycle
+ * @details
+ *   PWM Duty Cycle Counts = PWM PCNT Duty Cycle * 1024 / 100 PCNT
+ *
  * @param Percent duty-cycle, range (0:100.0)
  * @return PWM timer counts 
  */
@@ -84,39 +86,12 @@
  * 1% motor speed range = 7.67 ms.
  * Speed % = (pulse width - TCC_0RPM) / (
 */
-#define TCC_LOW_STIK TCC_TIME_ARMING
-#define TCC_FULL_STIK TCC_TIME_MAX_THRUST
-#define TCC_THRTTLE_RANGE  ( TCC_FULL_STIK - TCC_LOW_STIK )
+#define TCC_LOW_STIK       TCC_TIME_ARMING
+#define TCC_FULL_STIK      TCC_TIME_MAX_THRUST
+#define TCC_THRTTLE_RANGE  (TCC_FULL_STIK - TCC_LOW_STIK)
 
 
-/**
- * @brief integer scale factor for pwm percent
- * @details speed percent is not used for setting PWM but rather for 
- *  calculations involving percent motor speed (0.5%/bit precision)
- * e.g. 
- *  %DC = (PWM_DC_SCALE * PWM_PULSE_CNT) / PWM_PULSE_100_PCNT
- *
- * As u16, and using 1600 for 100% pulse time (period)
- *   65535 / 1600 = 40 
- *
- * Therefore use p-o-2 scale of 2^5
- */
-#define PWM_MSPEED_PCNT_SCALE  2.0
 
-/**
- * @brief convert raw servo position counts to integer percent
- *
- * @details 
- *   100% * SERVO_POSN / SERVO_RANGE
- *
- *  factor of 2 is factored out of num. and denomnator terms to avoid overflow of 16-bits
- *
- *
- * @param  SERVO_POSITION_COUNTS, range (0:3600)
- * 
- */
-#define PWM_MSPEED_PERCENT( _SERVO_POSITION_COUNTS_ )  \
-  ( (100.0 / 2 ) * ( _SERVO_POSITION_COUNTS_ ) / ( TCC_THRTTLE_RANGE / 2 ) )
 
 /**
  * The MCU drives 3 GPIO as output to IR2104 /SD pins. There is no significance 
