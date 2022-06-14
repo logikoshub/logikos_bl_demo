@@ -21,10 +21,13 @@
 
 /* Private defines -----------------------------------------------------------*/
 /*
- * Commutation timing values at ramp end-points originated from a fixed
+ * Commutation timing is the duration of 120 (electrical) degrees.
+ * Timing values at ramp end-points originated from a fixed
  * closed-loop timing table, hard-coded for 1100kv motor @ 12.v.
  * CTIME SCALAR is a vestige of rescaling the integer tables values which all
  * a common factor that being the system clock.
+ * Convert to seconds by multiplying the system tick e.g.
+ *   1866 * (1/16 Mhz) * 2 = ~230mS
  */
 // commutation period at start of ramp
 #define BL_CT_RAMP_START  (5632.0 * CTIME_SCALAR) // $1600
@@ -173,8 +176,13 @@ void BL_set_speed(uint16_t ui_mspeed_counts)
   }
   else // if (ui_mspeed_counts <= PD_SHUTOFF)
   {
-    // allow everything to reset once the throttle is lowered
-    BL_reset();
+    // allow everything to reset once the throttle is lowered but be sure to
+    // only allow reset if motor has actually been running otherwise we don't
+    // stay in Arming state long enough to get a system voltage measurement
+    if (0 != BL_motor_speed)
+    {
+      BL_reset();
+    }
   }
 }
 
@@ -319,7 +327,7 @@ void BL_State_Ctrl(void)
 
   if ( 0 != Faultm_get_status() )
   {
-    // sets BL pwm period to 0 and disables timer PWM channels but doesn't
+    // sets PWM period to 0 and disables timer PWM channels but doesn't
     // re-init the system state
     BL_stop();
   }
@@ -336,10 +344,11 @@ void BL_State_Ctrl(void)
     else if (BL_ARMING == bl_opstate)
     {
       // bl state is only set to ARMING at power-on/reset
-      static const uint16_t ARMING_TIME_TOTAL = 0x0900u;
-      static const uint16_t ARMING_TIME_DELAY = 0x0200u;
-      static const uint16_t ARMING_TIME_MASK = 0x01C0u;
-      static const uint16_t ARMING_BL_TIMING = 0x0010u;
+      static const uint16_t ARMING_TIME_TOTAL = 1800u; // 1.8 secs
+      static const uint16_t ARMING_TIME_HOLD  = 400u; // 400 msec
+      static const uint16_t ARMING_TIME_MASK  = 0x01C0u;
+      // commutation switching time .. actually is irrelevant .. only Phase A is active
+      static const uint16_t ARMING_BL_TIMING  = (uint16_t)BL_CT_RAMP_START; // arbitrary
       static uint16_t atimer = 0;
 
       BL_set_timing( ARMING_BL_TIMING ); // set to some small value (sampling vBatt measurement)
@@ -349,15 +358,20 @@ void BL_State_Ctrl(void)
         atimer += 1;
         inp_dutycycle = 0;
         // brief delay after power-on
-        if (atimer > ARMING_TIME_DELAY)
+        if (atimer < ARMING_TIME_HOLD)
+        {
+          // PWM DC only needs to be high enough to get stable voltage measurement
+          inp_dutycycle = (uint16_t)PWM_PCNT_ALIGN;
+          // Vbattery = (Vbattery + Seq_Get_Vbatt()) / 2; // tbd ...
+        }
+        else
         {
           // hold the current/PWM at fixed level
-          inp_dutycycle = PWM_PD_ARMING;
-        }
-        // turn off at regular interval to make distint beeping (more like clicking!) sound
-        if (atimer & ARMING_TIME_MASK)
-        {
-          inp_dutycycle = 0;
+          // turn on 1 motor phase at regular interval to make chirping sound
+          if (ARMING_TIME_MASK == (atimer & ARMING_TIME_MASK))
+          {
+            inp_dutycycle = PWM_PD_ARMING;
+          }
         }
       }
       else
@@ -415,14 +429,14 @@ void BL_State_Ctrl(void)
       // get the present BL commutation timing setpoint
       uint16_t bl_timing_setpt = BL_get_timing();
 
-      // control setpoint is Startup Speed, update the commutation timing
+      // Update the commutation timing using Startup Speed as control setpoint.
       // There is sort of an assumption here that the ramp-up over-shot the
       // speed (commutation period) and should now back off to the "startup"
       // timing. Unfortunately the exact values of those operating points are/were
       // tied to a static open-loop timing table for 1100kv motor at precisely 12.5v
       // Nonetheless syncing seems to work better to back the commutation timing
-      //  off at this point. A new addition now is that here the real speed (PWM-DC) 
-      // to ramped to the user input speed while waiting for sync to occur.
+      //  off at this point. A new addition now is that here the real speed (PWM-DC)
+      // is ramped to the user input speed while waiting for sync to occur.
       timing_ramp_control(bl_timing_setpt, (uint16_t)BL_CT_STARTUP);
 
       // controller returns true upon successful control step
@@ -434,10 +448,8 @@ void BL_State_Ctrl(void)
       }
       else
       {
-//        inp_dutycycle = PWM_get_dutycycle(); // hold the duty-cycle where it is
-        // Needs to ramp the speed in order to converge with comm timing?
-//        inp_dutycycle = bl_get_ramped_speed(BL_get_speed()); // this might be ok
-        inp_dutycycle = bl_get_ramped_speed(PWM_PD_STARTUP); // shoot toward lower speed until CL kicks in?
+        // Ramp toward lower speed until closed-loop control is sync'd
+        inp_dutycycle = bl_get_ramped_speed(PWM_PD_STARTUP);
       }
     }
     else if (BL_CLS_LOOP == bl_opstate)
@@ -493,7 +505,7 @@ void BL_Commutation_Step(void)
   {
   case BL_ARMING:
   case BL_ALIGN:
-    // keep sector 0 on until timeout
+    // keep sector 2 on until timeout (sector 2 is where supply voltage is sampled)
     Sequence_Step_0();
     break;
   case BL_MANUAL:
