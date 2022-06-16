@@ -21,9 +21,7 @@
 #include "driver.h"
 
 /* Private defines -----------------------------------------------------------*/
-/*
- TODO: system voltage should be measured at startup
-*/
+
 // divider: 33k/18k
 //  18/(18+33)=0.35
 // 0.35 * 14.1v = 4.98
@@ -168,7 +166,6 @@ void Driver_Get_Rx_It(void)
 /**
  * @brief  Return Rx Buffer
  */
-
 uint8_t Driver_Return_Rx_Buffer(void)
 {
   static uint8_t rxReadLoc = 0;
@@ -188,7 +185,6 @@ uint8_t Driver_Return_Rx_Buffer(void)
 /**
  * @brief  Clear Rx Buffer Element
  */
-
 void Driver_Clear_Rx_Buffer_Element(uint8_t Location)
 {
   rxReceive[Location] = 0;
@@ -202,9 +198,6 @@ void Driver_Clear_Rx_Buffer_Element(uint8_t Location)
  * @brief Call from timer/capture ISR on capture of rising edge of servo pulse
  *
 */
-/*
- * need to save global/static of "raw" value so that can check for lost signal
- */
 void Driver_on_capture_rise(void)
 {
 // 16-bit counter setup to wrap at 0xffff so no concern for sign of result
@@ -223,8 +216,8 @@ void Driver_on_capture_fall(void)
 {
   uint16_t t16 = get_pulse_end() - curr_pulse_start_tm /* get_pulse_start() */;
 
-// apply exponential filter (simple moving average) to smooth the signal
-  Pulse_dur = (Pulse_dur + t16) / 2; // sma
+  // apply exponential filter (simple moving average) to smooth the signal
+  Pulse_dur = (Pulse_dur + t16) / 2;
 
 // clear test pin
 //    GPIO_WriteLow(LED_GPIO_PORT, (GPIO_Pin_TypeDef)LED_GPIO_PIN);
@@ -259,6 +252,8 @@ void Driver_on_PWM_edge(void)
 void Driver_on_ADC_conv(void)
 {
   ADC_Global = ADC1_GetBufferValue( PH0_BEMF_IN_CH );
+
+// GPIO_WriteReverse(LED_GPIO_PORT, (GPIO_Pin_TypeDef)LED_GPIO_PIN);
 }
 
 /**
@@ -269,32 +264,35 @@ void Driver_on_ADC_conv(void)
  *   BL Control Task and the Periodic Task which occur at different rates.
  *   Responsible for updating the Commutation Timer period - invokes accessors
  *   from both MCU and BL classes.
+ *   Presently all configurations use 16Mhz timer with PS=2
  *
- *   System Timer period = fMaster * PS * 100%DC
- *                                   = (1/16 Mhz) * 8 * 250 counts -> 0.000125 S
+ *   System Timer period = fMaster    * PS * 100%DC
+ *                       = (1/16 Mhz) * 2  * 1024 counts -> 0.000128 S
  *
- *    BL Control Timer frequency                            =
+ *    BL Control Timer frequency                        =
  *      timer period * ISR frame count * CT_FRAME       =
- *      0.000125 sec * 4 ISRs          * 2 timer events = 0.001 seconds (1000 Hz)
+ *      0.000128 sec * 4 ISRs          * 2 timer events = 0.001024 seconds (~1000 Hz)
  *
- *    Periodic Task Timer frequency                     =
- *      timer period * ISR frame count * UI_FRAME       =
- *      0.000125     * 4 ISRs          * 32 timer events = 0.0167 seconds (60 Hz)
+ *    Periodic Task Timer frequency                      =
+ *      timer period * ISR frame count * UI_FRAME        =
+ *      0.000128     * 4 ISRs          * 32 timer events = 0.016384 seconds (~60 Hz)
  *
  */
 void Driver_Update(void)
 {
-  static const uint8_t UI_FRAME = 0x20; // UI task every 32 steps (even) i.e. 32 * 0.5 ms
-  static const uint8_t CT_FRAME = 0x01; // control task on odd steps i.e. @ 1 ms
+  static const uint8_t UI_FRAME = 0x20; // UI task every 32 steps (even) 
+                                        //  i.e. 32 * 4 ISRs * 0.128 ms = 16.4 ms
+  static const uint8_t CT_FRAME = 0x01; // control task on odd steps i.e. @ 1.024 ms
 
   static uint8_t trate = 0;
   trate += 1;
 
   // the controller and the UI are updated on alternate frames (doubled the
-  // timer rate) presently ths update done every 1.024mS so the controller rate ~1Khz
-  if ( 0 != (trate & CT_FRAME))
+  // timer rate) presently ths update done every 1.024mS so the controller 
+  // rate ~1Khz  (0.9765625 seconds)
+  if (0 != (trate & CT_FRAME))
   {
-    BL_State_Ctrl();  // update commutation timing controller
+    BL_state_control();  // update commutation timing controller
 
     // refresh the timer with the updated commutation time period
     MCU_set_comm_timer( BL_get_timing() );
@@ -334,7 +332,7 @@ void Driver_Step(void)
   switch(index)
   {
   case 0:
-    BL_Commutation_Step();
+    BL_commutation_step();
     break;
 
   case 1:

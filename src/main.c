@@ -14,7 +14,6 @@
  */
 /* Includes ------------------------------------------------------------------*/
 #include <stdio.h>
-//#include <ctype.h> // isprint
 
 // app headers
 #include "mcu_stm8s.h"
@@ -32,7 +31,6 @@
 #endif
 
 /* Private macro -------------------------------------------------------------*/
-#define VERSION 22165
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -48,7 +46,7 @@ void main(int argc, char **argv)
   MCU_Init();
   UI_Stop(); // resets and sets  initial control-state to ARMING
 
-  printf("\n\rProgram Startup (%hd)\n\r", VERSION);
+  printf("\n\rProgram Startup (%hd)\n\r", BL_SW_VERSION);
 
   enableInterrupts(); // interrupts are globally disabled by default
 

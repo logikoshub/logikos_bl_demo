@@ -1,10 +1,10 @@
 /**
   ******************************************************************************
   * @file sequence.h
-  * @brief
-  * @author
+  * @brief  Coordinates commutation switching sequence.
+  * @author Neidermeier
   * @version
-  * @date
+  * @date December-2020
   ******************************************************************************
   *
   * TBD
@@ -18,6 +18,15 @@
 #include "system.h"
 
 
+/* types -----------------------------------------------------------------*/
+
+/* declarations ---------------------------------------------------------*/
+
+/* macros ---------------------------------------------------------------*/
+
+#define SEQ_N_CSTEPS    6
+
+
 /* prototypes -----------------------------------------------------------*/
 
 uint16_t Seq_Get_bemfR(void);
@@ -26,7 +35,8 @@ uint16_t Seq_Get_bemfF(void);
 uint16_t Seq_Get_Vbatt(void);
 int16_t Seq_get_timing_error(void);
 bool Seq_get_timing_error_p(void);
-void Sequence_Step(void);
+
+void Sequence_Step(uint8_t step);
 
 void Sequence_Step_0(void);
 void Sequence_Step_1(void);

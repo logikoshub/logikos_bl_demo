@@ -17,7 +17,7 @@
 #include <stddef.h> // NULL
 #include "pwm_stm8s.h"
 #include "driver.h"
-#include "bldc_sm.h"
+
 
 /* Private defines -----------------------------------------------------------*/
 /**
@@ -67,10 +67,6 @@ static void sector_4(void);
 static void sector_5(void);
 
 /* Public variables  ---------------------------------------------------------*/
-/**
- * @brief state variable for the sequencer
- */
-Seq_sector_t Seq_step;
 
 /** @cond */ // hide some developer/debug code
 uint16_t Back_EMF_Falling_PhX;
@@ -391,11 +387,11 @@ uint16_t Seq_Get_Vbatt(void)
  */
 void Sequence_Step_0(void)
 {
-  Seq_step = SECTOR_0;
-  step_ptr_table[ Seq_step ]();
+  Seq_sector_t step = SECTOR_0;
+  step_ptr_table[ step ]();
 
-  // point to sector 1 for next sequence step
-  Seq_step = SECTOR_1;
+  // In Arming-state a single motor-phase is PWM'd to generate a voltage measurement
+  Vbatt_ = Driver_Get_ADC();
 }
 
 /**
@@ -403,26 +399,8 @@ void Sequence_Step_0(void)
  *
  * @details  Handler for commutation-sequencing ISR.
  */
-void Sequence_Step(void)
+void Sequence_Step(uint8_t step)
 {
-  // note this sizeof and divide done in preprocessor - verified in the assembly
-  const uint8_t N_CSTEPS = sizeof(step_ptr_table) / sizeof(step_ptr_t);
-
-
-// has to cast modulus expression to uint8
-  Seq_step = (uint8_t)(( Seq_step + 1 ) % N_CSTEPS);
-
-// intentionally letting motor windmill (i.e. not braking) when switched off
-// normally
-  if (BL_IS_RUNNING == BL_get_state() )
-  {
-    // let'er rip!
-    step_ptr_table[Seq_step]();
-  }
-  else
-  {
-    // intitialize the average
-    Back_EMF_Riseing_PhX = Back_EMF_Falling_PhX = Vbatt_ = 0;
-  }
+    step_ptr_table[step]();
 }
 /**@}*/ // defgroup

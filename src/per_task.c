@@ -51,7 +51,6 @@ static void m_stop(void);
 static void m_start(void);
 static void help_me(void);
 
-/* Public variables  ---------------------------------------------------------*/
 
 /* Private types     ---------------------------------------------------------*/
 /**
@@ -92,8 +91,9 @@ ui_key_handler_t;
 // shared between ISR and non-ISR context
 static volatile uint8_t TaskRdy; // flag for timer interrupt for BG task timing
 
+static BL_status_t bl_status;
+
 static uint8_t Log_Level;
-static uint16_t Vsystem;
 static uint16_t UI_Speed; // motor percent speed input from servo or remote UI
 
 #define KEYBOARD_DETECT_WINDOW 60 // 60 * 0.167 mS = 1 second
@@ -147,7 +147,7 @@ static void Log_println(int zrof)
       PWM_get_dutycycle(),
       BL_get_timing(),
       BL_get_speed(),
-      Vsystem,
+      bl_status.bl_sys_voltage,
       (int)Faultm_get_status(),
 
       Driver_get_pulse_dur(),
@@ -212,7 +212,7 @@ static void m_start(void)
  */
 static void m_stop(void)
 {
-  // reset the machine
+  printf("\r\nStopped!\r\n");
   BL_reset();
 
   UI_Speed = 0;
@@ -226,19 +226,25 @@ static void m_stop(void)
  */
 static void spd_plus(void)
 {
-  if (UI_Speed < U16_MAX)
+  uint16_t speed = UI_Speed + (uint16_t)MSPEED_PCNT_INCREM_STEP;
+  // protect against overflow
+  if (speed > UI_Speed)
   {
-    UI_Speed += (uint16_t)MSPEED_PCNT_INCREM_STEP;
+    UI_Speed = speed;
   }
+  Log_Level = 1;
+
 }
 /*
  * motor speed decrement (manual control)
  */
 static void spd_minus(void)
 {
-  if (UI_Speed > 0)
+  uint16_t speed = UI_Speed - (uint16_t)MSPEED_PCNT_INCREM_STEP;
+  // protect against underflow
+  if (speed < UI_Speed)
   {
-    UI_Speed -= (uint16_t)MSPEED_PCNT_INCREM_STEP;
+    UI_Speed = speed;
   }
   Log_Level = 1;
 }
@@ -280,13 +286,14 @@ void help_me(void)
 {
   printf("\r\n");
   printf("----------------------------------------------\r\n");
-  printf("BL Motor Control on STM8 %s\r\n", "Version 0.1");
-  printf("Keys:\r\n");
-  printf("   / (slash):  start\r\n");
-  printf("   <    >   :  speed-/speed+\r\n");
-  printf("   m        :  toggle auto/manual control\r\n");
-  printf("   [    ]   :  speed+/speed- (manual commutation control)\r\n");
-  printf("   Space Bar:  stop\r\n");
+  printf("BL Motor Control Version %d\r\n", BL_SW_VERSION);
+  printf("  Detected Vbatt 0x%04X\r\n", bl_status.bl_sys_voltage);
+  printf("  Keys:\r\n");
+  printf("     / (slash):  start\r\n");
+  printf("     <    >   :  speed-/speed+\r\n");
+  printf("     m        :  toggle auto/manual control\r\n");
+  printf("     [    ]   :  speed+/speed- (manual commutation control)\r\n");
+  printf("     Space Bar:  stop\r\n");
   printf("----------------------------------------------\r\n");
   printf("\r\n");
 }
@@ -321,8 +328,6 @@ static void Periodic_task(void)
   static bool rf_enabled = FALSE;
   static uint16_t servo_pulse_sma = 0;
 
-  BL_RUNSTATE_t bl_state;
-
 // Invoke the terminal input and ui speed subroutines.
 // If there is a valid key input, a function pointer to the input handler is
 // returned. This is done prior to entering a Critical Section (DI/EI) in which
@@ -332,12 +337,12 @@ static void Periodic_task(void)
 
   disableInterrupts();  //////////////// DI
 
+  bl_status = BL_get_status();
+
   if (NULL != fp)
   {
     fp();
   }
-
-  bl_state = BL_get_state();
 
   // passes the UI percent motor speed to the BL controller
   if (Radio_detect_timer < KEYBOARD_DETECT_WINDOW)
@@ -366,15 +371,14 @@ static void Periodic_task(void)
     BL_set_speed(cmd_speed);
   }
 
-  Vsystem = Seq_Get_Vbatt();
-
   enableInterrupts();  ///////////////// EI EI O
 
 #if defined( UNDERVOLTAGE_FAULT_ENABLED )
   // update system voltage diagnostic - check plausibilty of Vsys
-  if ((BL_IS_RUNNING == bl_state) && (Vsystem > 0))
+  if (bl_status.bl_sys_voltage > BL_VSYS_OOR_THRSH)
   {
-    Faultm_upd(VOLTAGE_NG, (faultm_assert_t)(Vsystem < V_SHUTDOWN_THR));
+    Faultm_upd(
+      VOLTAGE_NG, (faultm_assert_t)(bl_status.bl_sys_voltage < V_SHUTDOWN_THR));
   }
 #endif
 }
