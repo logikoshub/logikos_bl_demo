@@ -1,10 +1,10 @@
 /**
   ******************************************************************************
   * @file system.h
-  * @brief
-  * @author
+  * @brief  system definition constants
+  * @author Neidermeier
   * @version
-  * @date
+  * @date   December-2020
   ******************************************************************************
   *
   * Platform specific system definitions and includes.
@@ -22,6 +22,10 @@
 #endif // UNIT_TEST
 
 
+// Julian date of sw version
+#define BL_SW_VERSION 22167
+
+
 // List of supported SPI configurations
 #define SPI_NONE                0
 #define SPI_STM8_MASTER         1
@@ -34,7 +38,6 @@
 #endif
 
 
-//#define ENABLE_MAN_TIMING
 
 /**
  * the STM8 variant is defined in the project file, along with the appropriate 
