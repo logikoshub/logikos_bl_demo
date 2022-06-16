@@ -15,6 +15,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stddef.h> // NULL
+#include <string.h> // memcpy
 // app headers - there are several needed for logging system data
 #include "mcu_stm8s.h"
 #include "sequence.h"
@@ -334,10 +335,15 @@ static void Periodic_task(void)
 // it will then be safe to invoke the input handler function (e.g. can call
 // subfunctions that may be messing with global variables e.g. motor speed etc.
   ui_handlrp_t fp = handle_term_inp();
+  BL_status_t * p_bl_status = NULL;
 
   disableInterrupts();  //////////////// DI
 
-  bl_status = BL_get_status();
+  p_bl_status = BL_get_status();
+  if (NULL != p_bl_status)
+  {
+    memcpy(&bl_status, p_bl_status, sizeof(BL_status_t));
+  }
 
   if (NULL != fp)
   {

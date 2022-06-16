@@ -70,6 +70,7 @@
 /* Public variables  ---------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
+static BL_status_t bl_status; // aggregation of various status data
 static uint16_t BL_vbatt_measure; // use ADC input to guage the power supply voltage
 static uint16_t BL_comm_period; // persistent value of ramp timing
 static uint16_t BL_motor_speed; // persistent value of motor speed
@@ -203,18 +204,16 @@ void BL_set_timing(uint16_t u16)
 /**
  * @brief Accessor for state variable.
  *
- * @return state value
+ * @return pointer to struct
  */
-BL_status_t BL_get_status(void)
+BL_status_t *BL_get_status(void)
 {
-  BL_status_t bl_status;
-
   bl_status.bL_opstate = BL_opstate;
   bl_status.bl_sys_voltage = BL_vbatt_measure;
   bl_status.bl_motor_speed = BL_motor_speed;
   bl_status.bl_comm_period = BL_comm_period;
 
-  return bl_status;
+  return &bl_status;
 }
 
 /**
