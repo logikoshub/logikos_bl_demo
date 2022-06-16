@@ -95,7 +95,7 @@ uint16_t BL_get_speed(void);
 
 void BL_reset(void);
 
-BL_status_t BL_get_status(void);
+BL_status_t *BL_get_status(void);
 
 uint8_t BL_get_ct_mode(void);
 
